@@ -10,7 +10,8 @@ class ClassTimeitWrapper(object):
     def __call__(self, *args, **kwargs):
         timeit_start_time = timeit.default_timer()
         self.org_function(self, *args, **kwargs)
-        print(timeit.default_timer() - timeit_start_time), " seconds"
+        print(timeit.default_timer() - timeit_start_time), "seconds"
+        print(timeit.default_timer() - timeit_start_time)
 
 
 class FuncTimeitWrapper(object):
@@ -22,3 +23,4 @@ class FuncTimeitWrapper(object):
         timeit_start_time = timeit.default_timer()
         self.org_function(*args, **kwargs)
         print(timeit.default_timer() - timeit_start_time), "seconds"
+        print(timeit.default_timer() - timeit_start_time)

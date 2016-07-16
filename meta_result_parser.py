@@ -5,7 +5,6 @@ Web Service.
 
 """
 from collections import defaultdict
-from meta_utils import ClassTimeitWrapper
 
 
 class ResultParser(object):

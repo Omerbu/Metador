@@ -6,8 +6,15 @@ and original track duration ("org_duration")
 
 result-tuple format:
     (score, match_duration, title, artist)
+<<<<<<< HEAD
 
     score = match percentage, representaed by float.
+    match_duration = matched track duration (not org_duration!)
+    title, artist = self explanatory.
+
+=======
+
+    score = match percentage, represented by float.
     match_duration = matched track duration (not org_duration!)
     title, artist = self explanatory.
 

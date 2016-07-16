@@ -9,11 +9,15 @@ from meta_utils import FuncTimeitWrapper
 API_KEY = 'JKMQc1GXqS'
 
 
+
+
+@FuncTimeitWrapper
 def aidmatch(filename, parsed=True):
 
 
     try:
         results, org_duration = mr_acoustid.match(API_KEY, filename, parse=parsed)
+        results, org_duration = mr_acoustid.match(API_KEY, filename,parse=parsed)
     except mr_acoustid.NoBackendError:
         print("chromaprint library/tool not found", file=sys.stderr)
         sys.exit(1)
