@@ -2,9 +2,9 @@
 """Module for returning track Metadata (music-tags)."""
 import pygn
 import urllib
-from meta_utils import FuncTimeitWrapper
 import discogs_client
 from bs4 import BeautifulSoup
+from meta_utils import FuncTimeitWrapper
 
 pygn_userID = "27680793551513575-12D4F149E8C4D17B6E76872200F49455"
 pygn_clientID = '1735505540-C6C936F2054DA76A0D98E82163189CF0'
@@ -13,19 +13,8 @@ discogs_access_token = "LifLerwCJirFtBnEFUDXnhXOWPfZiuBpKutzuLVW"
 discogs_user_agent = "Metador_Application_AutoTagger"
 
 
-@FuncTimeitWrapper
-def retrieve_tags(artist_name, track_name):
-    """New DOC."""
-import sys
-from meta_utils import FuncTimeitWrapper
-reload(sys)
-sys.setdefaultencoding('utf8')
-
-clientID = '1735505540-C6C936F2054DA76A0D98E82163189CF0'
-userID = pygn.register(clientID)        # register time is about 2 sec.
 
 
-@FuncTimeitWrapper
 def main(artist_name, track_name):
     """Receive artist + track name and return music-tags from GraceNote API.
 
@@ -34,8 +23,7 @@ def main(artist_name, track_name):
     :return: a dictionary containing music-tags
 
     """
-    tags_results = pygn.search(pygn_clientID, pygn_userID,)
-    tags_results = pygn.search(clientID, userID,
+    tags_results = pygn.search(pygn_clientID, pygn_userID,
                                artist=artist_name, track=track_name)
     tags_dictionary = dict()
     tags_dictionary['album'] = tags_results["album_title"]
@@ -72,7 +60,6 @@ def validate_tags(tags_dictionary, artist_name):
             secondary_search(tags_dictionary, tags_dictionary["album"], artist_name)
 
 
-@FuncTimeitWrapper
 def secondary_search(tags_dictionary, album_string, artist_name):
     """
     Discogs Based API.

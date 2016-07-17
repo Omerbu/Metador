@@ -4,7 +4,7 @@ import meta_tags_retriever
 
 
 def main():
-    meta_tags_retriever.retrieve_tags(u"עידן רייכל", u"בין קירות ביתי")
+    meta_tags_retriever.retrieve_tags("Gabrielle aplin", "English rain")
 
 if __name__ == "__main__":
     main()
