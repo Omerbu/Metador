@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Module for returning track Metadata (music-tags)."""
+import re
 import pygn
 import urllib
 import discogs_client
@@ -12,12 +13,10 @@ pygn_clientID = '1735505540-C6C936F2054DA76A0D98E82163189CF0'
 discogs_access_token = "LifLerwCJirFtBnEFUDXnhXOWPfZiuBpKutzuLVW"
 discogs_user_agent = "Metador_Application_AutoTagger"
 
-
-
-
+@FuncTimeitWrapper
 def main(artist_name, track_name):
     """Receive artist + track name and return music-tags from GraceNote API.
-
+        More DOCS!
     :param artist_name:
     :param track_name:
     :return: a dictionary containing music-tags
@@ -35,7 +34,6 @@ def main(artist_name, track_name):
     tags_dictionary["genre"] = tags_results['genre']['3']['TEXT']
     image_url = tags_results["album_art_url"]
     if image_url:
-        print "Debug!"
         image_binary_string = urllib.urlopen(image_url).read()
         tags_dictionary["album_art"] = image_binary_string
     else:
@@ -80,7 +78,6 @@ def secondary_search(tags_dictionary, album_string, artist_name):
 def album_art_finder(album_name, artist_name):
     """
     Not Complete!
-    needed smart link identification (by link-string)
 
     :param album_name:
     :param artist_name:
@@ -95,15 +92,16 @@ def album_art_finder(album_name, artist_name):
     soup = BeautifulSoup(html_string, "html.parser")
     table = soup.find("table", class_="tbl")
     table_soup = BeautifulSoup(str(table))
-    links = table_soup.find_all("a")
+    string = table_soup.find(string=re.compile(album_name[:3]))
+    links = string.find_parents("a")
     album_link = links[0]
     album_link = album_link["href"]
     album_page_html = urllib.urlopen("https://musicbrainz.org/" + album_link).read()
     album_page = BeautifulSoup(album_page_html, "html.parser")
-    cover = album_page.find("a", class_="artwork-image")
-    cover_link = cover["href"]
-    image_binary_string = urllib.urlopen("https:" + cover_link).read()
-    urllib.urlretrieve("https:" + cover_link, "test_file.jpg")
+    cover = album_page.find("div", class_="cover-art")
+    cover_link = cover.img["src"]
+    image_binary_string = urllib.urlopen(cover_link).read()
+    urllib.urlretrieve(cover_link, "test_file.jpg")
     return image_binary_string
 
 
