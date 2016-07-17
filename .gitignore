@@ -1,4 +1,4 @@
 *.pyc
-fpcalc.exe
 .gitattributes
-.idea\*
+fpcalc.exe
+.idea/*
