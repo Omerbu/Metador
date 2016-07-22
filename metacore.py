@@ -17,7 +17,7 @@ org_duration = original track duration (seconds).
 import sys
 import mr_acoustid
 
-API_KEY = 'JKMQc1GXqS'      # our API code for the project
+ACOUSTID_API_KEY = 'JKMQc1GXqS'      # our API code for the project
 
 
 def fingerprint_search(filename):
@@ -28,7 +28,7 @@ def fingerprint_search(filename):
     Filename is either a local dir or a global dir.
     """
     try:
-        results, org_duration = mr_acoustid.match(API_KEY, filename)
+        results, org_duration = mr_acoustid.match(ACOUSTID_API_KEY, filename)
     except mr_acoustid.NoBackendError:
         print "chromaprint library/tool not found"
         sys.exit(1)
