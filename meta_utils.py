@@ -2,7 +2,7 @@
 import timeit
 
 
-def func_decorator(org_function,):
+def time_decorator(org_function, ):
     def actual_decorator(*args, **kwargs):
         timeit_start_time = timeit.default_timer()
         result = org_function(*args, **kwargs)

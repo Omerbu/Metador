@@ -6,10 +6,10 @@ import urllib
 import discogs_client
 from bs4 import BeautifulSoup
 import pylast
-from meta_utils import func_decorator
+from meta_utils import time_decorator
 
 # GraceNote API keys:
-pygn_userID = "279882536723493437-7A075FF81D3300554B7C166A0961BE5A"
+pygn_userID = "27962471776224303-FF72AD796AB3BFD8639F5455B63BD7EE"
 pygn_clientID = '1735505540-C6C936F2054DA76A0D98E82163189CF0'
 # userID = pygn.register(pygn_clientID)        # register time is about 2 sec.
 
@@ -21,7 +21,7 @@ discogs_user_agent = "Metador_Application_AutoTagger"
 lastfmKey = "78b2431b39da9c451b8c000b02c687d7"
 lastfmSecret = "6b8c8647c71244ff4faca5aa5efc73ac"
 
-
+@time_decorator
 def main_search(artist_name, track_name):
     """Receive artist + track name and return music-tags from GraceNote API.
         If Pygn results are incomplete, runs a secondary search algorithm that searches
@@ -45,7 +45,6 @@ def main_search(artist_name, track_name):
         image_binary_string = lastfm_album_art(
             tags_dict["Artist"], tags_dict["Album"])
     validate_tags(tags_dict, artist_name, track_name)
-    debug_print(tags_dict)
     return tags_dict, image_binary_string
 
 

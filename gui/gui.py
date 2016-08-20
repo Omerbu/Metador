@@ -1,63 +1,101 @@
+# -*- coding: utf-8 -*-
+import re
+import os
+import os.path
+import sys
+import random
 from kivy.config import Config
-from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.popup import Popup
-from kivy.uix.listview import ListView, ListItemButton
-from kivy.uix.selectableview import SelectableView
-from kivy.adapters.listadapter import ListAdapter
-from filebrowser import FileBrowser
 from kivy.app import App
-from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.treeview import TreeView
+from kivy.uix.treeview import TreeViewLabel
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
+from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from os.path import sep, expanduser, isdir, dirname
-import sys
 
-class TestApp(App):
+from kivy.uix.textinput import TextInput
+from kivy.core.window import Window
+from kivy.uix.filechooser import FileChooserListView
+from kivy.uix.gridlayout import GridLayout
+
+class BottomLayout(FloatLayout):
+    pass
+
+
+class SelectTreeView(TreeView):
+
+    __events__ = ('on_node_expand', 'on_node_collapse', 'on_select')
+
+    def select_node(self, node):
+        super(SelectTreeView, self).select_node(node)
+
+        self.dispatch("on_select", node)
+
+    def on_select(self, node):
+        pass
+
+    def populate_tree_view(self, path, upper=None):
+        path = unicode(path)
+        path_list = os.listdir(path)
+        for some_dir in path_list:
+            if os.path.isfile(os.path.join(path, some_dir)) is True:
+                self.add_node(TreeViewLabel(text=unicode(some_dir)), upper)
+            else:
+                folder = TreeViewLabel(text=unicode(some_dir))
+                self.add_node(folder, upper)
+                self.populate_tree_view(os.path.join(path, some_dir), folder)
+
+
+
+
+
+
+class TagEditorLayout(BoxLayout):
+
+    TAGS_DICT = {}
+
+    def __init__(self):
+        super(TagEditorLayout, self).__init__()
+        self.input_list = [x for x in self.ids.keys() if "InputArtist" in x]
+
+    def print_text_input(self):
+
+        for input_text in self.input_list:
+            self.TAGS_DICT[input_text] = self.ids[input_text].text
+        print self.TAGS_DICT
+
+    def input_text_change(self, tree, tree_node):
+        debug_dict = {"Artist": "{}".format(tree_node.text)}
+        for input_text in self.input_list:
+            self.ids[input_text].text = debug_dict[
+                re.sub("Input", "", input_text)]
+
+
+class MetadorGui(App):
 
     def build(self):
-        if sys.platform == 'win':
-            user_path = dirname(expanduser('~')) + sep + 'Documents'
-        else:
-            user_path = expanduser('~') + sep + 'Documents'
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-        root_widget = GridLayout(cols=2)
-        self.browser = FileBrowser(select_string='Select',
-                              favorites=[(user_path, 'Documents')])
-        self.browser.dirselect = True
-        self.browser.bind(
-            on_success=self._fbrowser_success,
-            on_canceled=self._fbrowser_canceled)
-        self.open_button = Button(text="Open Browser")
-        self.label = Label()
-        self.popup_browser= Popup(title="File Browser", content=self.browser,
-                                  auto_dismiss=False)
-        self.open_button.bind(on_press=self.popup_browser.open)
-        self.label.text = "Default text"
-        self.test_list = [str(x) for x in xrange(20)]
-        self.list_adapter = ListAdapter(cls=ListItemButton, data=self.test_list)
-        self.list_widget = ListView(adapter=self.list_adapter)
-        self.list_label = Label(text="default")
-        self.list_adapter.bind(on_selection_change=self.change_list_label)
+        root_layout = BoxLayout(orientation="vertical")
+        upper_layout = BoxLayout(orientation="horizontal")
+        tag_editor = TagEditorLayout()
+        tree_view = SelectTreeView(size_hint_y=None)
+        tree_view.bind(on_select=tag_editor.input_text_change)
+        tree_view.bind(minimum_height=tree_view.setter("height"))
+        tree_view.populate_tree_view(
+            "D:\The Music")
+        scroll_layout = ScrollView()
+        scroll_layout.add_widget(tree_view)
+        bottom_layout = BottomLayout()
+        upper_layout.add_widget(scroll_layout)
+        upper_layout.add_widget(tag_editor)
+        root_layout.add_widget(upper_layout)
+        root_layout.add_widget(bottom_layout)
+        return root_layout
 
-        root_widget.add_widget(self.open_button)
-        root_widget.add_widget(self.label)
-        root_widget.add_widget(self.list_widget)
-        root_widget.add_widget(self.list_label)
 
-        return root_widget
-
-    def _fbrowser_canceled(self, instance):
-        self.popup_browser.dismiss()
-
-    def _fbrowser_success(self, instance):
-        text = str(instance.selection)
-        print self.browser.filters
-        self.label.text = text
-        self.popup_browser.dismiss()
-
-    def change_list_label(self, adapter):
-        print self.list_adapter.selection
-        if self.list_adapter.selection:
-            self.list_label.text = self.list_adapter.selection[0].text
 if __name__ == '__main__':
-    TestApp().run()
+    MetadorGui().run()

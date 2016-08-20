@@ -1,0 +1,62 @@
+#:kivy 1.9.1
+
+<TextInput>:
+    multiline: False
+
+<TagEditorLayout>:
+
+    orientation: "vertical"
+    size_hint: 0.8, 1
+    Label:
+        id: lbl_title
+        text: "Title:"
+    TextInput:
+        id: InputTitle
+    Label:
+        id: label_artist
+        text: "Artist:"
+    TextInput:
+        id: InputArtist
+    Label:
+        id: lbl_tracknumber
+        text: "Track Number:"
+    TextInput:
+        id: InputTracknumber
+        input_filter: "int"
+    Label:
+        id: lbl_album
+        text: "Album:"
+    TextInput:
+        id: InputAlbum
+    Label:
+        id: lbl_date
+        text: "Release Date:"
+    TextInput:
+        id: InputDate
+    Label:
+        id: lbl_genre
+        text: "Genre:"
+    TextInput:
+        id: InputGenre
+    Label:
+        id: lbl_album_artist
+        text: "Album Artist:"
+    TextInput:
+        id: InputAlbumartist
+    BoxLayout:
+        orientation: "horizontal"
+        Button:
+            text: "Metador This!"
+            on_press: root.input_text_change()
+        Button:
+            text: "Apply Changes"
+            on_press: root.print_text_input()
+
+
+<BottomLayout>:
+    size_hint: 1,0.1
+    Button:
+        id: btn1
+        size_hint: 0.15, 0.7
+        pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
+        text: "Metador Me!"
