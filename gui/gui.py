@@ -16,11 +16,18 @@ from kivy.uix.button import Button
 from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from os.path import sep, expanduser, isdir, dirname
-
+from kivy.properties import StringProperty, BooleanProperty
 from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
 from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.gridlayout import GridLayout
+
+
+class FileViewLabel(TreeViewLabel):
+
+    path = StringProperty("")
+    is_mapped = BooleanProperty(False)
+
 
 class BottomLayout(FloatLayout):
     pass
@@ -50,8 +57,50 @@ class SelectTreeView(TreeView):
                 self.populate_tree_view(os.path.join(path, some_dir), folder)
 
 
+class AlternateTreeView(TreeView):
 
+    __events__ = ('on_node_expand', 'on_node_collapse', 'on_select')
 
+    def select_node(self, node):
+        super(AlternateTreeView, self).select_node(node)
+
+        self.dispatch("on_select", node)
+
+    def on_node_expand(self, node):
+        if node.is_mapped:
+            return
+        else:
+            self.check_for_directory(node)
+
+    def on_select(self, node):
+        pass
+
+    def check_for_directory(self, node):
+        node.is_mapped = True
+        for nod in node.nodes:
+            sub_node_path = nod.path
+            if os.path.isdir(sub_node_path):
+                nod.is_mapped = True
+                sub_dir = os.listdir(sub_node_path)
+                for sub_dir_file in sub_dir:
+                    self.add_node(FileViewLabel(path=os.path.join(
+                        sub_node_path, sub_dir_file), text=sub_dir_file), nod)
+
+    def populate_tree_view(self, path, upper=None):
+        path = unicode(path)
+        path_list = os.listdir(path)
+        for some_dir in path_list:
+            if os.path.isfile(os.path.join(path, some_dir)) is True:
+                self.add_node(FileViewLabel(path=os.path.join(path, some_dir),
+                                            text=unicode(some_dir)), upper)
+            else:
+                folder = FileViewLabel(path=os.path.join
+                (path, some_dir), text=unicode(some_dir))
+                self.add_node(folder, upper)
+                # self.populate_tree_view(os.path.join(path, some_dir), folder)
+                folder_listdir = os.listdir(os.path.join(path, some_dir))
+                for sub_dir in folder_listdir:
+                    self.add_node(FileViewLabel(path=os.path.join(path, some_dir, sub_dir), text=unicode(sub_dir)), folder)
 
 
 class TagEditorLayout(BoxLayout):
@@ -82,7 +131,7 @@ class MetadorGui(App):
         root_layout = BoxLayout(orientation="vertical")
         upper_layout = BoxLayout(orientation="horizontal")
         tag_editor = TagEditorLayout()
-        tree_view = SelectTreeView(size_hint_y=None)
+        tree_view = AlternateTreeView(size_hint_y=None)
         tree_view.bind(on_select=tag_editor.input_text_change)
         tree_view.bind(minimum_height=tree_view.setter("height"))
         tree_view.populate_tree_view(
