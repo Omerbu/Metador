@@ -3,42 +3,94 @@
 <TextInput>:
     multiline: False
 
-<TagEditorLayout>:
+<FolderLabel>:
+    text_size: root.width, None
+    mipmap: True
+    padding_y: 4
+    bold: True
+    size:self.texture_size
+    canvas:
+        Rectangle:
+            texture:root.folder_icon.texture
+            pos: root.pos[0] -35, root.center_y -7
+            size: (15, 15)
+<FileLabel>:
+    text_size: root.width, None
+    mipmap: True
+    bold: True
+    padding_y: 5
+    size:self.texture_size
+    canvas:
+        Rectangle:
+            texture:root.file_icon.texture
+            pos: root.pos[0] -25, root.center_y -7
+            size: (15, 15)
 
+<EditorLabel>:
+    bold:True
+
+<LeftLayout>:
+    orientation:"vertical"
+    BoxLayout:
+        id:tree_button_layout
+        size_hint: 1, 0.05
+        Button:
+            text:"Change Directory"
+        ProgressSpinner:
+            id: tree_progress
+            auto_start: False
+            speed:2
+        Button:
+            text:"Refresh"
+            on_press: app.tree_refresh()
+
+
+<TagEditorLayout>:
     orientation: "vertical"
-    size_hint: 0.8, 1
-    Label:
+    size_hint: 1.2, 1
+    BoxLayout:
+        size_hint_y: 4.5
+        EditorLabel:
+            id: lbl_file
+            text: "File Name"
+            text_size: self.size
+            padding_x: 5
+            valign: "middle"
+        Image:
+            size_hint: 0.4, 1
+            source:"C:\Users\Master\Pictures\icons\music_icon_3.png"
+    EditorLabel:
         id: lbl_title
         text: "Title:"
     TextInput:
         id: InputTitle
-    Label:
+    EditorLabel:
         id: label_artist
         text: "Artist:"
     TextInput:
         id: InputArtist
-    Label:
+    EditorLabel:
         id: lbl_tracknumber
         text: "Track Number:"
     TextInput:
         id: InputTracknumber
         input_filter: "int"
-    Label:
+    EditorLabel:
         id: lbl_album
         text: "Album:"
     TextInput:
         id: InputAlbum
-    Label:
+    EditorLabel:
         id: lbl_date
         text: "Release Date:"
     TextInput:
         id: InputDate
-    Label:
+    EditorLabel:
         id: lbl_genre
         text: "Genre:"
     TextInput:
         id: InputGenre
-    Label:
+    EditorLabel:
         id: lbl_album_artist
         text: "Album Artist:"
     TextInput:
@@ -47,10 +99,23 @@
         orientation: "horizontal"
         Button:
             text: "Metador This!"
-            on_press: root.input_text_change()
+            on_press:
         Button:
             text: "Apply Changes"
             on_press: root.print_text_input()
+
+<TreeLoadingScreen>:
+    auto_dismiss:False
+    background_color: [0,0,0,0]
+    size_hint: 0.2,0.2
+    ProgressSpinner:
+        id: progress_bar
+        speed: 2
+
+
+
+
+
 
 
 <BottomLayout>:
