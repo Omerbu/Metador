@@ -4,17 +4,16 @@ import os
 import os.path
 import threading
 from functools import partial
-from multiprocess import Process
 import scandir
 import sys
 import time
 import random
 from kivy.uix.progressbar import ProgressBar
-from kivy.clock import Clock,mainthread
+from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
 from kivy.app import App
-from kivy.uix.filechooser import FileChooser
+from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.treeview import TreeView
@@ -27,7 +26,7 @@ from kivy.graphics import Rectangle
 from kivy.properties import StringProperty, BooleanProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
-from kivy.garden.progressspiner import ProgressSpinner
+from garden.progressspinner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.uix.gridlayout import GridLayout
 from meta_utils import time_decorator
@@ -76,6 +75,10 @@ class BottomLayout(FloatLayout):
 
 
 class LeftLayout(BoxLayout):
+    pass
+
+
+class DragModal(ModalView):
     pass
 
 
@@ -128,6 +131,23 @@ class DynamicTreeView(TreeView):
 
     FILTER_RE = "(^[^.]*$)|(.*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc))"
 
+    def on_touch_down(self, touch):
+        node = self.get_node_at_pos(touch.pos)
+        if not node:
+            return
+        if node.disabled:
+            return
+        # toggle node or selection ?
+        if node.x - self.indent_start <= touch.x < node.x:
+            self.toggle_node(node)
+        elif node.x <= touch.x:
+            if touch.is_double_tap:
+                self.toggle_node(node)
+            else:
+                self.select_node(node)
+                node.dispatch('on_touch_down', touch)
+        return True
+
     def select_node(self, node):
         super(DynamicTreeView, self).select_node(node)
 
@@ -147,7 +167,6 @@ class DynamicTreeView(TreeView):
         for sub_node in node.nodes:
             sub_node_path = sub_node.path
             if type(sub_node).__name__ == "FolderViewLabel":
-                sub_node.is_mapped = False
                 for sub_node_sub_dir in self.filter_dir_gen(sub_node_path):
                     if sub_node_sub_dir.is_file():
                             self.add_node(FileViewLabel(
@@ -185,7 +204,6 @@ class DynamicTreeView(TreeView):
                         self.add_node(FolderViewLabel(path=sub_dir.path,
                                                     text=unicode(sub_dir.name)), folder)
                         yield
-
 
     def clear_tree_view(self):
         node_list = [node for node in self.iterate_all_nodes()]
@@ -236,10 +254,11 @@ class MetadorGui(App):
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.id = "tree_view_id"
+        self.drag_modal = DragModal()
         self.scroll_layout = ScrollView()
         self.bottom_layout = BottomLayout()
-        self.tree_loading_stop()
         self.scroll_layout.add_widget(self.tree_view)
+        self.tree_loading_stop()
         self.left_layout.add_widget(self.scroll_layout)
         self.upper_layout.add_widget(self.left_layout)
         self.upper_layout.add_widget(self.tag_editor)
@@ -258,6 +277,7 @@ class MetadorGui(App):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
                                         window_instance.mouse_pos[1]):
+            self.drag_modal.dismiss()
             self.mapping_event(drop_file_string)
 
     def mapping_event(self, path_string):

@@ -36,6 +36,7 @@
         size_hint: 1, 0.05
         Button:
             text:"Change Directory"
+            on_press: app.drag_modal.open()
         ProgressSpinner:
             id: tree_progress
             auto_start: False
@@ -104,24 +105,30 @@
             text: "Apply Changes"
             on_press: root.print_text_input()
 
-<TreeLoadingScreen>:
-    auto_dismiss:False
-    background_color: [0,0,0,0]
-    size_hint: 0.2,0.2
-    ProgressSpinner:
-        id: progress_bar
-        speed: 2
 
+<TreeCarousel>:
+    direction: "left"
+    anim_move_duration: 0.2
+    loop:True
+    scroll_timeout: -1
 
-
-
-
-
+<DragModal>:
+    opacity: 1
+    pos_hint: {"x" : 0, "y": 0.07 }
+    size_hint: (0.46, 0.89)
+    Label:
+        opacity: 1
+        text:"Drag Here Your Destination Folder"
 
 <BottomLayout>:
     size_hint: 1,0.1
-    Button:
-        id: btn1
-        size_hint: 0.15, 0.7
-        pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
-        text: "Metador Me!"
+    Carousel:
+        id:carousel_id
+        scroll_timeout: -1
+        Button:
+            id: btn1
+            size_hint: 0.15, 0.7
+            pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
+            text: "Metador Me!"
+            on_press:carousel_id.load_next()
+        ProgressBar:
