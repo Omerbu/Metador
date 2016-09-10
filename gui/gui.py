@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 import re
+from io import BytesIO
 import os
 import os.path
 import threading
-from functools import partial
 import scandir
 import sys
-import time
-import random
 from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 from kivy.config import Config
@@ -26,9 +24,11 @@ from kivy.graphics import Rectangle
 from kivy.properties import StringProperty, BooleanProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
-from garden.progressspinner import ProgressSpinner
+from kivy.graphics.texture import Texture
+from kivy.garden.progressspiner import ProgressSpinner
 from kivy.core.window import Window
-from kivy.uix.gridlayout import GridLayout
+from kivy.core.image import ImageData
+
 from meta_utils import time_decorator
 
 
@@ -41,13 +41,11 @@ class TreeLoadingScreen(ModalView):
 
 
 class FileLabel(Label):
-
     file_icon = Image(source="C:\Users\Master\Pictures\icons\music_icon_4.png",
                       mipmap=True)
 
 
 class FolderLabel(Label):
-
     folder_icon = Image(source="C:\Users\Master\Pictures\icons\\folder.png",
                         mipmap=True)
 
@@ -55,19 +53,22 @@ class FolderLabel(Label):
 class FileViewLabel(FileLabel, TreeViewNode):
 
     path = StringProperty("")
-    is_mapped = BooleanProperty(False)
+    is_mapped = BooleanProperty(True)
+    node_type = StringProperty("File")
 
 
 class FolderViewLabel(FolderLabel, TreeViewNode):
 
     path = StringProperty("")
-    is_mapped = BooleanProperty(False)
+    is_mapped = BooleanProperty(True)
+    node_type = StringProperty("Folder")
 
 
 class StandardViewLabel(TreeViewLabel):
 
     path = StringProperty("")
     is_mapped = BooleanProperty(False)
+    node_type = StringProperty("Root")
 
 
 class BottomLayout(FloatLayout):
@@ -82,54 +83,12 @@ class DragModal(ModalView):
     pass
 
 
-class GeneratorTreeView(TreeView):
-    """ NOT CURRENTLY USED!"""
-    REC_COUNTER = 0
-
-    __events__ = ('on_node_expand', 'on_node_collapse', 'on_select')
-
-    FILTER_PATTERN = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)"
-
-    def select_node(self, node):
-        super(GeneratorTreeView, self).select_node(node)
-
-        self.dispatch("on_select", node)
-
-    def on_select(self, node):
-        pass
-
-    def populate_tree_view(self, path, upper=None):
-        if upper is None:
-            self.root_options = {"text": path}
-        path = unicode(path)
-        for some_dir in scandir.scandir(path):
-            some_dir_path = some_dir.path
-            if some_dir.is_file():
-                if re.match(self.FILTER_PATTERN, some_dir.name):
-                    file_node = FileViewLabel()
-                    file_node.path = some_dir_path
-                    file_node.text = some_dir.name
-                    self.add_node(file_node, upper)
-            else:
-                folder = FolderViewLabel(path=some_dir_path, text=unicode(some_dir.name))
-                self.add_node(folder, upper)
-                inner_generator = self.populate_tree_view(some_dir_path, folder)
-                yield
-                for x in inner_generator:
-                    yield
-
-    def clear_tree_view(self):
-        node_list = [node for node in self.iterate_all_nodes()]
-        for node in node_list:
-            self.remove_node(node)
-
-
-class DynamicTreeView(TreeView):
-    """2-stepped dynamic tree widget."""
+class DynamicTree(TreeView):
 
     __events__ = ('on_node_expand', 'on_node_collapse', 'on_select')
 
     FILTER_RE = "(^[^.]*$)|(.*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc))"
+    FILE_EXT_RE = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)$"
 
     def on_touch_down(self, touch):
         node = self.get_node_at_pos(touch.pos)
@@ -138,9 +97,9 @@ class DynamicTreeView(TreeView):
         if node.disabled:
             return
         # toggle node or selection ?
-        if node.x - self.indent_start <= touch.x < node.x:
+        if node.x - self.indent_start * 1.5 <= touch.x < node.x:
             self.toggle_node(node)
-        elif node.x <= touch.x:
+        elif node.x - self.indent_start <= touch.x:
             if touch.is_double_tap:
                 self.toggle_node(node)
             else:
@@ -149,8 +108,7 @@ class DynamicTreeView(TreeView):
         return True
 
     def select_node(self, node):
-        super(DynamicTreeView, self).select_node(node)
-
+        super(DynamicTree, self).select_node(node)
         self.dispatch("on_select", node)
 
     def on_node_expand(self, node):
@@ -165,58 +123,69 @@ class DynamicTreeView(TreeView):
     def check_for_directory(self, node):
         node.is_mapped = True
         for sub_node in node.nodes:
-            sub_node_path = sub_node.path
-            if type(sub_node).__name__ == "FolderViewLabel":
-                for sub_node_sub_dir in self.filter_dir_gen(sub_node_path):
-                    if sub_node_sub_dir.is_file():
-                            self.add_node(FileViewLabel(
-                                path=sub_node_sub_dir.path,
-                                text=unicode(sub_node_sub_dir.name)), sub_node)
-                    else:
-                        self.add_node(FolderViewLabel(
-                            path=sub_node_sub_dir.path,
-                            text=unicode(sub_node_sub_dir.name)), sub_node)
+            self.remove_node(sub_node)
+        for sub_dir in self.filter_dir_gen(node.path):
+            sub_dir_path = sub_dir.path
+            if sub_dir.is_file():
+                self.add_node(FileViewLabel(path=sub_dir_path,
+                                            text=unicode(sub_dir.name)), node)
+            else:
+                sub_folder = FolderViewLabel(path=sub_dir.path, text=sub_dir.name)
+                self.add_node(sub_folder, node)
+                if self.empty_dir_check(sub_dir_path):
+                    none_node = FileViewLabel(path="", text="")
+                    sub_folder.is_mapped = False
+                    self.add_node(none_node, sub_folder)
 
     def populate_tree_view(self, path):
         """Only triggered at file tree initialization."""
         yield
         path = unicode(path)
-        self.root_node = StandardViewLabel(path=path, text=path)
+        self.root_node = StandardViewLabel(path=path, text=path, is_mapped=True)
         self.toggle_node(self.root_node)
         self.add_node(self.root_node)
         for some_dir in self.filter_dir_gen(path):
             some_dir_path = some_dir.path
             if some_dir.is_file():
-                    self.add_node(FileViewLabel(path=some_dir_path,
-                                                text=unicode(some_dir.name)),
-                                                self.root_node)
-                    yield
+                self.add_node(FileViewLabel(path=some_dir_path,
+                                            text=unicode(some_dir.name)))
+                yield
             else:
                 folder = FolderViewLabel(path=some_dir_path, text=unicode(some_dir.name))
                 self.add_node(folder, self.root_node)
-                for sub_dir in self.filter_dir_gen(some_dir_path):
-                    if sub_dir.is_file():
-                            self.add_node(FileViewLabel(path=sub_dir.path,
-                                                        text=unicode(sub_dir.name)),
-                                                        folder)
-                            yield
-                    else:
-                        self.add_node(FolderViewLabel(path=sub_dir.path,
-                                                    text=unicode(sub_dir.name)), folder)
-                        yield
+                if self.empty_dir_check(some_dir_path):
+                    none_node = FileViewLabel(path="", text="")
+                    folder.is_mapped = False
+                    self.add_node(none_node, folder)
+                yield
+
+    def empty_dir_check(self, directory):
+        dir_generator = self.filter_dir_gen(directory)
+        try:
+            dir_generator.next()
+        except StopIteration:
+            return None
+        return True
 
     def clear_tree_view(self):
-        node_list = [node for node in self.iterate_all_nodes()]
-        for node in node_list:
+        """Remove all tree items."""
+        for node in [node for node in self.iterate_all_nodes()]:
             self.remove_node(node)
 
     def filter_dir_gen(self, path):
+        """
+        Wrapper for 'scandir' that returns only folders and
+        compatible music files.
+
+        """
         for filter_sub_dir in scandir.scandir(path):
-            if re.match(self.FILTER_RE, filter_sub_dir.name):
+            if filter_sub_dir.is_dir() or re.match(self.FILE_EXT_RE,
+                                                   filter_sub_dir.name):
                 yield filter_sub_dir
 
 
 class TagEditorLayout(BoxLayout):
+    """Layout for the all widgets related to the manual tag editor."""
 
     TAGS_DICT = {}
 
@@ -250,12 +219,13 @@ class MetadorGui(App):
         self.upper_layout = BoxLayout(orientation="horizontal")
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
-        self.tree_view = DynamicTreeView(size_hint_y=None, hide_root=True)
+        self.tree_view = DynamicTree(size_hint_y=None, hide_root=True)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.id = "tree_view_id"
         self.drag_modal = DragModal()
         self.scroll_layout = ScrollView()
+        self.scroll_layout.scroll_distance = 30
         self.bottom_layout = BottomLayout()
         self.scroll_layout.add_widget(self.tree_view)
         self.tree_loading_stop()
@@ -265,18 +235,13 @@ class MetadorGui(App):
         self.root_layout.add_widget(self.upper_layout)
         self.root_layout.add_widget(self.bottom_layout)
 
-
         return self.root_layout
 
     def drop_file_event(self, window_instance, drop_file_string):
 
-        def drop_file_callback(clocktime):
-            self.tree_view.clear_tree_view()
-            self.tree_view.populate_tree_view(drop_file_string)
-            self.tree_loading_screen.dismiss()
-
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
-                                        window_instance.mouse_pos[1]):
+                                        window_instance.mouse_pos[1])and \
+                                        os.path.isdir(drop_file_string):
             self.drag_modal.dismiss()
             self.mapping_event(drop_file_string)
 
@@ -296,9 +261,11 @@ class MetadorGui(App):
         # Clock.schedule_once(drop_file_callback, 0)
 
     def tree_refresh(self):
+        """Remaps the folder tree with the same root directory."""
         try:
             self.mapping_event(self.tree_view.root_node.path)
         except AttributeError:
+            # In case there's no existing file tree.
             return
 
     def tree_loading_start(self):

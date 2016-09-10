@@ -1,7 +1,12 @@
 #:kivy 1.9.1
 
+
+<Button>:
+    markup: True
+
 <TextInput>:
     multiline: False
+
 
 <FolderLabel>:
     text_size: root.width, None
@@ -23,7 +28,7 @@
     canvas:
         Rectangle:
             texture:root.file_icon.texture
-            pos: root.pos[0] -25, root.center_y -7
+            pos: root.pos[0] -20, root.center_y -7
             size: (15, 15)
 
 <EditorLabel>:
@@ -100,31 +105,29 @@
         orientation: "horizontal"
         Button:
             text: "Metador This!"
-            on_press:
+            on_press:app.bottom_layout.ids.metador_progress_bar.value +=10
         Button:
-            text: "Apply Changes"
+            text: "[b][color=ffffff]Apply Changes[/color][/b]"
+            background_normal: ""
+            background_down: "atlas://data/images/defaulttheme/button_pressed"
+            background_color:(0.75,0,0,1)
             on_press: root.print_text_input()
+            markup: True
 
-
-<TreeCarousel>:
-    direction: "left"
-    anim_move_duration: 0.2
-    loop:True
-    scroll_timeout: -1
 
 <DragModal>:
     opacity: 1
-    pos_hint: {"x" : 0, "y": 0.07 }
-    size_hint: (0.46, 0.89)
+    pos_hint: {"x" : 0.05, "y": 0.45 }
+    size_hint: (0.35, 0.1)
     Label:
         opacity: 1
         text:"Drag Here Your Destination Folder"
 
 <BottomLayout>:
-    size_hint: 1,0.1
+    size_hint: 1, 0.08
     Carousel:
         id:carousel_id
-        scroll_timeout: -1
+        scroll_timeout: 200
         Button:
             id: btn1
             size_hint: 0.15, 0.7
@@ -132,3 +135,4 @@
             text: "Metador Me!"
             on_press:carousel_id.load_next()
         ProgressBar:
+            id: metador_progress_bar
