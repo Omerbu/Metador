@@ -6,6 +6,7 @@
 
 <TextInput>:
     multiline: False
+    use_bubble: True
 
 
 <FolderLabel>:
@@ -19,6 +20,7 @@
             texture:root.folder_icon.texture
             pos: root.pos[0] -35, root.center_y -7
             size: (15, 15)
+
 <FileLabel>:
     text_size: root.width, None
     mipmap: True
@@ -53,7 +55,7 @@
 
 <TagEditorLayout>:
     orientation: "vertical"
-    size_hint: 1.2, 1
+    size_hint: 1, 1
     BoxLayout:
         size_hint_y: 4.5
         EditorLabel:
@@ -113,6 +115,47 @@
             background_color:(0.75,0,0,1)
             on_press: root.print_text_input()
             markup: True
+
+<ConverterLayout>:
+    orientation: "vertical"
+    Label:
+        size_hint:1,0.07
+        id: converter_label
+        text: "Music Converter"
+    BoxLayout:
+        size_hint: 1,0.06
+        Label:
+            text: "Convert to:"
+            size_hint: 0.4, 1
+        Spinner:
+            text: "File Format"
+            values: ("FLAC", "ALAC", "MP3", "OGG")
+
+    ListView:
+        id: converter_list_view
+        adapter: app.converter_list_adapter
+    BoxLayout:
+        size_hint: 1,0.1
+        Label:
+            size_hint: 0.4,1
+            text: "Output Folder:"
+            canvas.before:
+                Color:
+                    rgba: 1,0,0,1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+        Label:
+            text: "Debug"
+            shorten: True
+    BoxLayout:
+        size_hint: 1, 0.067
+        Button:
+            text: "Change Output Folder"
+        Button:
+            text: "Convert"
+
+
 
 
 <DragModal>:

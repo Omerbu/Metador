@@ -147,3 +147,5 @@ class DynamicTreeView(TreeView):
         for filter_sub_dir in scandir.scandir(path):
             if re.match(self.FILTER_RE, filter_sub_dir.name):
                 yield filter_sub_dir
+
+

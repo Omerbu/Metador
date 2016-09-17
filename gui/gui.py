@@ -6,7 +6,11 @@ import os.path
 import threading
 import scandir
 import sys
+from kivy.uix.spinner import Spinner
 from kivy.uix.progressbar import ProgressBar
+from kivy.uix.screenmanager import ScreenManager,Screen
+from kivy.uix.listview import ListView,ListItemButton
+from kivy.adapters.listadapter import ListAdapter
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
@@ -28,8 +32,12 @@ from kivy.graphics.texture import Texture
 from kivy.garden.progressspiner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
-
+from gui_tests import AnimatedBoxLayout
 from meta_utils import time_decorator
+
+
+class ConverterLayout(BoxLayout):
+    pass
 
 
 class EditorLabel(Label):
@@ -85,7 +93,8 @@ class DragModal(ModalView):
 
 class DynamicTree(TreeView):
 
-    __events__ = ('on_node_expand', 'on_node_collapse', 'on_select')
+    __events__ = ('on_node_expand', 'on_node_collapse', 'on_select',
+                  'on_file_doubleclick')
 
     FILTER_RE = "(^[^.]*$)|(.*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc))"
     FILE_EXT_RE = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)$"
@@ -101,7 +110,10 @@ class DynamicTree(TreeView):
             self.toggle_node(node)
         elif node.x - self.indent_start <= touch.x:
             if touch.is_double_tap:
-                self.toggle_node(node)
+                if node.node_type == "File":
+                    self.dispatch("on_file_doubleclick", node)
+                else:
+                    self.toggle_node(node)
             else:
                 self.select_node(node)
                 node.dispatch('on_touch_down', touch)
@@ -116,6 +128,9 @@ class DynamicTree(TreeView):
             return
         else:
             self.check_for_directory(node)
+
+    def on_file_doubleclick(self, node):
+        pass
 
     def on_select(self, node):
         pass
@@ -192,36 +207,50 @@ class TagEditorLayout(BoxLayout):
     def __init__(self):
         super(TagEditorLayout, self).__init__()
         self.input_list = [x for x in self.ids.keys() if "InputArtist" in x]
+        self.previous_input_dict = {"InputArtist": ""}
+        self.differentiated_input_dict = {}
 
     def print_text_input(self):
-
         for input_text in self.input_list:
             self.TAGS_DICT[input_text] = self.ids[input_text].text
-        print self.TAGS_DICT
+        self.differentiated_input_dict = {key: self.TAGS_DICT[key] for key in
+                                          self.TAGS_DICT if self.TAGS_DICT[key] !=
+                                          self.previous_input_dict[key]}
+        print self.differentiated_input_dict
 
     def input_text_change(self, tree, tree_node):
         self.ids["lbl_file"].text = tree_node.path
         debug_dict = {"Artist": "{}".format(tree_node.path)}
+        self.previous_input_dict = {"InputArtist": "{}".format(tree_node.path)}
         for input_text in self.input_list:
             self.ids[input_text].text = debug_dict[
                 re.sub("Input", "", input_text)]
+            self.ids[input_text].cursor = (0, 0)
+            self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
 
 class MetadorGui(App):
 
     DIFF = int()
+    CONV_DATA = []
 
     def build(self):
         Window.bind(on_dropfile=self.drop_file_event)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+        self.converter_list_adapter = ListAdapter(data=self.CONV_DATA,
+                                                  cls=ListItemButton)
         self.tree_loading_screen = TreeLoadingScreen()
         self.root_layout = BoxLayout(orientation="vertical")
-        self.upper_layout = BoxLayout(orientation="horizontal")
+        self.upper_layout = AnimatedBoxLayout(orientation="horizontal")
+        self.editor_carousel = Carousel()
+        self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
+        self.tree_view.bind(on_file_doubleclick=self.add_converter_list)
+        self.mapping_event("D:\The Music")
         self.tree_view.id = "tree_view_id"
         self.drag_modal = DragModal()
         self.scroll_layout = ScrollView()
@@ -229,9 +258,11 @@ class MetadorGui(App):
         self.bottom_layout = BottomLayout()
         self.scroll_layout.add_widget(self.tree_view)
         self.tree_loading_stop()
+        self.editor_carousel.add_widget(self.tag_editor)
+        self.editor_carousel.add_widget(self.converter_layout)
         self.left_layout.add_widget(self.scroll_layout)
         self.upper_layout.add_widget(self.left_layout)
-        self.upper_layout.add_widget(self.tag_editor)
+        self.upper_layout.add_widget(self.editor_carousel)
         self.root_layout.add_widget(self.upper_layout)
         self.root_layout.add_widget(self.bottom_layout)
 
@@ -258,7 +289,6 @@ class MetadorGui(App):
         self.tree_view.clear_tree_view()
         self.tree_generator = self.tree_view.populate_tree_view(path_string)
         self.mapping_schedule = Clock.schedule_interval(mapping_callback, 0)
-        # Clock.schedule_once(drop_file_callback, 0)
 
     def tree_refresh(self):
         """Remaps the folder tree with the same root directory."""
@@ -273,6 +303,15 @@ class MetadorGui(App):
 
     def tree_loading_stop(self):
         self.left_layout.ids.tree_progress.stop_spinning()
+
+    def add_converter_list(self, file_tree, node):
+        """Add or remove Items on converter widget data-list."""
+        if node.text not in self.CONV_DATA:
+            self.CONV_DATA.append(node.text)
+        else:
+            self.CONV_DATA.remove(node.text)
+        self.converter_list_adapter.data = self.CONV_DATA
+        self.converter_layout.ids.converter_list_view.populate()
 
 
 if __name__ == '__main__':
