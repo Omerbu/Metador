@@ -25,19 +25,20 @@ from kivy.uix.button import Button
 from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.graphics import Rectangle
-from kivy.properties import StringProperty, BooleanProperty
+from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspiner import ProgressSpinner
+from kivy.garden.progressspinner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
-from gui_tests import AnimatedBoxLayout
+from gui_classes import AnimatedBoxLayout
 from meta_utils import time_decorator
 
 
 class ConverterLayout(BoxLayout):
     pass
+
 
 
 class EditorLabel(Label):
@@ -199,6 +200,27 @@ class DynamicTree(TreeView):
                 yield filter_sub_dir
 
 
+class ConverterList(DynamicTree):
+
+    def populate_tree_view(self, path):
+        pass
+
+    def check_for_directory(self, node):
+        pass
+
+    def filter_dir_gen(self, path):
+        pass
+
+    def add_to_list(self, root_tree, node):
+        self.node_list = [sub_node.path for sub_node in self.iterate_all_nodes() if
+                          not sub_node.text == "Root"]
+        if node.path not in self.node_list:
+            self.add_node(FileViewLabel(path=node.path,text=node.text))
+
+    def remove_from_list(self,node):
+        self.remove_node(node)
+
+
 class TagEditorLayout(BoxLayout):
     """Layout for the all widgets related to the manual tag editor."""
 
@@ -232,13 +254,10 @@ class TagEditorLayout(BoxLayout):
 class MetadorGui(App):
 
     DIFF = int()
-    CONV_DATA = []
 
     def build(self):
         Window.bind(on_dropfile=self.drop_file_event)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-        self.converter_list_adapter = ListAdapter(data=self.CONV_DATA,
-                                                  cls=ListItemButton)
         self.tree_loading_screen = TreeLoadingScreen()
         self.root_layout = BoxLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal")
@@ -249,7 +268,7 @@ class MetadorGui(App):
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
-        self.tree_view.bind(on_file_doubleclick=self.add_converter_list)
+        self.tree_view.bind(on_file_doubleclick=self.converter_layout.ids.converter_list.add_to_list)
         self.mapping_event("D:\The Music")
         self.tree_view.id = "tree_view_id"
         self.drag_modal = DragModal()
@@ -304,14 +323,7 @@ class MetadorGui(App):
     def tree_loading_stop(self):
         self.left_layout.ids.tree_progress.stop_spinning()
 
-    def add_converter_list(self, file_tree, node):
-        """Add or remove Items on converter widget data-list."""
-        if node.text not in self.CONV_DATA:
-            self.CONV_DATA.append(node.text)
-        else:
-            self.CONV_DATA.remove(node.text)
-        self.converter_list_adapter.data = self.CONV_DATA
-        self.converter_layout.ids.converter_list_view.populate()
+
 
 
 if __name__ == '__main__':

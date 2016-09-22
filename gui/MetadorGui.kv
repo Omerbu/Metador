@@ -64,9 +64,18 @@
             text_size: self.size
             padding_x: 5
             valign: "middle"
-        Image:
-            size_hint: 0.4, 1
-            source:"C:\Users\Master\Pictures\icons\music_icon_3.png"
+        Carousel:
+            scroll_timeout: -1
+            size_hint: 0.45,1
+            Image:
+                source:"C:\Users\Master\Pictures\icons\music_icon_3.png"
+                on_touch_down:
+            BoxLayout:
+                orientation: "vertical"
+                Button:
+                    text: "Add Picture"
+                Button:
+                    text: "Remove Picture"
     EditorLabel:
         id: lbl_title
         text: "Title:"
@@ -119,43 +128,42 @@
 <ConverterLayout>:
     orientation: "vertical"
     Label:
-        size_hint:1,0.07
+        size_hint:1,0.1
         id: converter_label
         text: "Music Converter"
+        bold:True
     BoxLayout:
-        size_hint: 1,0.06
+        size_hint: 1,0.07
         Label:
             text: "Convert to:"
             size_hint: 0.4, 1
         Spinner:
             text: "File Format"
             values: ("FLAC", "ALAC", "MP3", "OGG")
-
-    ListView:
-        id: converter_list_view
-        adapter: app.converter_list_adapter
+            sync_height: True
     BoxLayout:
-        size_hint: 1,0.1
+        size_hint: 1,0.07
         Label:
             size_hint: 0.4,1
             text: "Output Folder:"
-            canvas.before:
-                Color:
-                    rgba: 1,0,0,1
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
-        Label:
+        Button:
             text: "Debug"
             shorten: True
+    Label:
+        size_hint: 1,0.12
+        text: "Files To Convert:"
+    ScrollView:
+        scroll_distance: 30
+        ConverterList:
+            size_hint_y:None
+            hide_root: True
+            id: converter_list
+            on_file_doubleclick: self.remove_from_list(self.selected_node)
+            height: self.minimum_height
     BoxLayout:
-        size_hint: 1, 0.067
-        Button:
-            text: "Change Output Folder"
+        size_hint: 1, 0.08
         Button:
             text: "Convert"
-
-
 
 
 <DragModal>:
@@ -165,6 +173,10 @@
     Label:
         opacity: 1
         text:"Drag Here Your Destination Folder"
+
+<SpinnerOption>:
+    size: 50,28
+
 
 <BottomLayout>:
     size_hint: 1, 0.08
