@@ -139,40 +139,49 @@
             size_hint: 0.4, 1
         Spinner:
             text: "File Format"
+            bold: True
             values: ("FLAC", "ALAC", "MP3", "OGG")
             sync_height: True
-    BoxLayout:
-        size_hint: 1,0.07
-        Label:
-            size_hint: 0.4,1
-            text: "Output Folder:"
-        Button:
-            text: "Debug"
-            shorten: True
     Label:
         size_hint: 1,0.12
         text: "Files To Convert:"
+        bold: True
     ScrollView:
         scroll_distance: 30
         ConverterList:
+            id: converter_list
             size_hint_y:None
             hide_root: True
-            id: converter_list
-            on_file_doubleclick: self.remove_from_list(self.selected_node)
+            on_file_doubleclick: self.modify_list(self.selected_node)
             height: self.minimum_height
     BoxLayout:
-        size_hint: 1, 0.08
+        size_hint: 1,0.08
+
+        Label:
+            size_hint: 0.2,1
+            text: "Output:"
+        TextInput:
+            id: converter_output_text_input
+            text: "Output Folder"
+        Button:
+            size_hint: 0.1,0.98
+            text: "..."
+            on_press: app.converter_modal.open()
+    BoxLayout:
+        size_hint: 1,0.08
+        Button:
+            text: "Clear"
+            on_press: converter_list.clear_tree_view()
         Button:
             text: "Convert"
 
 
-<DragModal>:
+<BaseModal>:
     opacity: 1
-    pos_hint: {"x" : 0.05, "y": 0.45 }
     size_hint: (0.35, 0.1)
     Label:
         opacity: 1
-        text:"Drag Here Your Destination Folder"
+        text:
 
 <SpinnerOption>:
     size: 50,28
@@ -183,11 +192,18 @@
     Carousel:
         id:carousel_id
         scroll_timeout: 200
-        Button:
-            id: btn1
-            size_hint: 0.15, 0.7
-            pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
-            text: "Metador Me!"
-            on_press:carousel_id.load_next()
+        FloatLayout:
+            Button:
+                id: btn1
+                size_hint: 0.15, 0.7
+                pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
+                text: "Metador Me!"
+                on_press:carousel_id.load_next()
+            Button:
+                id: editor_converter_button
+                text: "Converter"
+                size_hint: 0.1, 0.6
+                pos_hint: {"x": 0.895,"y":0.18}
+                on_press: app.change_editor_carousel()
         ProgressBar:
             id: metador_progress_bar

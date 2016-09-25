@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import re
-from io import BytesIO
 import os
 import os.path
 import threading
@@ -8,13 +7,11 @@ import scandir
 import sys
 from kivy.uix.spinner import Spinner
 from kivy.uix.progressbar import ProgressBar
-from kivy.uix.screenmanager import ScreenManager,Screen
-from kivy.uix.listview import ListView,ListItemButton
-from kivy.adapters.listadapter import ListAdapter
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
 from kivy.app import App
+from kivy.uix.behaviors import DragBehavior
 from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -22,14 +19,13 @@ from kivy.uix.treeview import TreeView
 from kivy.uix.treeview import TreeViewLabel, TreeViewNode
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
-from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.graphics import Rectangle
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspinner import ProgressSpinner
+from kivy.garden.progressspiner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
 from gui_classes import AnimatedBoxLayout
@@ -40,13 +36,8 @@ class ConverterLayout(BoxLayout):
     pass
 
 
-
 class EditorLabel(Label):
     """Label Class for editor text input headers."""
-
-
-class TreeLoadingScreen(ModalView):
-    """Tree Loading Screen."""
 
 
 class FileLabel(Label):
@@ -88,8 +79,15 @@ class LeftLayout(BoxLayout):
     pass
 
 
-class DragModal(ModalView):
-    pass
+class BaseModal(ModalView):
+
+    is_open = BooleanProperty(False)
+
+    def on_open(self):
+        self.is_open = True
+
+    def on_dismiss(self):
+        self.is_open = False
 
 
 class DynamicTree(TreeView):
@@ -189,15 +187,19 @@ class DynamicTree(TreeView):
             self.remove_node(node)
 
     def filter_dir_gen(self, path):
+        counter = int()
         """
         Wrapper for 'scandir' that returns only folders and
         compatible music files.
 
         """
-        for filter_sub_dir in scandir.scandir(path):
-            if filter_sub_dir.is_dir() or re.match(self.FILE_EXT_RE,
-                                                   filter_sub_dir.name):
-                yield filter_sub_dir
+        try:
+            for filter_sub_dir in scandir.scandir(path):
+                if filter_sub_dir.is_dir() or re.match(self.FILE_EXT_RE,
+                                                       filter_sub_dir.name):
+                    yield filter_sub_dir
+        except OSError:
+            yield
 
 
 class ConverterList(DynamicTree):
@@ -211,14 +213,16 @@ class ConverterList(DynamicTree):
     def filter_dir_gen(self, path):
         pass
 
-    def add_to_list(self, root_tree, node):
-        self.node_list = [sub_node.path for sub_node in self.iterate_all_nodes() if
+    def modify_list(self, input_node):
+        self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
                           not sub_node.text == "Root"]
-        if node.path not in self.node_list:
-            self.add_node(FileViewLabel(path=node.path,text=node.text))
-
-    def remove_from_list(self,node):
-        self.remove_node(node)
+        self.node_path_list = [n_path.path for n_path in self.node_list]
+        if input_node.path not in self.node_path_list:
+            self.add_node(FileViewLabel(path=input_node.path,
+                                        text=input_node.text))
+        else:
+            [self.remove_node(to_remove_node) for to_remove_node in
+             self.node_list if to_remove_node.path == input_node.path]
 
 
 class TagEditorLayout(BoxLayout):
@@ -258,20 +262,19 @@ class MetadorGui(App):
     def build(self):
         Window.bind(on_dropfile=self.drop_file_event)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
-        self.tree_loading_screen = TreeLoadingScreen()
+        self.modal_config()
         self.root_layout = BoxLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal")
-        self.editor_carousel = Carousel()
+        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=0.3)
         self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
-        self.tree_view.bind(on_file_doubleclick=self.converter_layout.ids.converter_list.add_to_list)
+        self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
         self.mapping_event("D:\The Music")
         self.tree_view.id = "tree_view_id"
-        self.drag_modal = DragModal()
         self.scroll_layout = ScrollView()
         self.scroll_layout.scroll_distance = 30
         self.bottom_layout = BottomLayout()
@@ -287,6 +290,12 @@ class MetadorGui(App):
 
         return self.root_layout
 
+    def modal_config(self):
+        self.drag_modal = BaseModal(pos_hint={"x": 0.05, "y": 0.45})
+        self.drag_modal.children[0].text = "Drag Here Your Destination Folder"
+        self.converter_modal = BaseModal(pos_hint={"x": 0.6, "y": 0.5})
+        self.converter_modal.children[0].text = "Drag Here Your Output Folder"
+
     def drop_file_event(self, window_instance, drop_file_string):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
@@ -294,6 +303,15 @@ class MetadorGui(App):
                                         os.path.isdir(drop_file_string):
             self.drag_modal.dismiss()
             self.mapping_event(drop_file_string)
+        elif self.editor_carousel.collide_point(window_instance.mouse_pos[0],
+                                         window_instance.mouse_pos[1]) and \
+                                        self.editor_carousel.index == 1 and \
+                                        self.converter_modal.is_open:
+
+            print self.converter_modal.is_open
+            self.converter_layout.ids.converter_output_text_input.text\
+                = drop_file_string
+            self.converter_modal.dismiss()
 
     def mapping_event(self, path_string):
 
@@ -317,13 +335,25 @@ class MetadorGui(App):
             # In case there's no existing file tree.
             return
 
+    def file_doubleclick_handler(self,tree_instnace,node):
+        if self.editor_carousel.index == 0:
+            return
+        else:
+            self.converter_layout.ids.converter_list.modify_list(node)
+
+    def change_editor_carousel(self):
+        if self.editor_carousel.index == 0:
+            self.editor_carousel.load_next()
+            self.bottom_layout.ids.editor_converter_button.text = "Tag Editor"
+        else:
+            self.editor_carousel.load_previous()
+            self.bottom_layout.ids.editor_converter_button.text = "Converter"
+
     def tree_loading_start(self):
         self.left_layout.ids.tree_progress.start_spinning()
 
     def tree_loading_stop(self):
         self.left_layout.ids.tree_progress.stop_spinning()
-
-
 
 
 if __name__ == '__main__':
