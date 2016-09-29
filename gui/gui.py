@@ -25,7 +25,7 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspiner import ProgressSpinner
+from kivy.garden.progressspinner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
 from gui_classes import AnimatedBoxLayout
@@ -33,7 +33,7 @@ from meta_utils import time_decorator
 
 
 class ConverterLayout(BoxLayout):
-    pass
+    """Layout that hosts the file converter widgets"""
 
 
 class EditorLabel(Label):
@@ -135,6 +135,7 @@ class DynamicTree(TreeView):
         pass
 
     def check_for_directory(self, node):
+        """Read the contents of the folder represented by 'node' argument."""
         node.is_mapped = True
         for sub_node in node.nodes:
             self.remove_node(sub_node)
@@ -153,7 +154,6 @@ class DynamicTree(TreeView):
 
     def populate_tree_view(self, path):
         """Only triggered at file tree initialization."""
-        yield
         path = unicode(path)
         self.root_node = StandardViewLabel(path=path, text=path, is_mapped=True)
         self.toggle_node(self.root_node)
@@ -174,6 +174,7 @@ class DynamicTree(TreeView):
                 yield
 
     def empty_dir_check(self, directory):
+        """Checks if the argument 'directory' is empty"""
         dir_generator = self.filter_dir_gen(directory)
         try:
             dir_generator.next()
@@ -187,10 +188,10 @@ class DynamicTree(TreeView):
             self.remove_node(node)
 
     def filter_dir_gen(self, path):
-        counter = int()
         """
         Wrapper for 'scandir' that returns only folders and
         compatible music files.
+        Handles OSE exceptions caused by strict-access folders.
 
         """
         try:
@@ -214,6 +215,11 @@ class ConverterList(DynamicTree):
         pass
 
     def modify_list(self, input_node):
+        """
+        A 2 in 1 method, that allows do add\ remove nodes from the list widget.
+        If input_node already exists in the list widget, it removes it.
+
+        """
         self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
                           not sub_node.text == "Root"]
         self.node_path_list = [n_path.path for n_path in self.node_list]
@@ -226,7 +232,14 @@ class ConverterList(DynamicTree):
 
 
 class TagEditorLayout(BoxLayout):
-    """Layout for the all widgets related to the manual tag editor."""
+    """
+    Layout for the all widgets related to the manual tag editor.
+
+    When pressing the 'Apply Changes' button, only the text inputs that were
+    modified by the user are to be input-argument for tags-writing method.
+    (Purpose of the Differentiated input dictionary)
+
+    """
 
     TAGS_DICT = {}
 
@@ -237,6 +250,11 @@ class TagEditorLayout(BoxLayout):
         self.differentiated_input_dict = {}
 
     def print_text_input(self):
+        """
+        Future 'Apply Changes' method for writing tags to the selected
+        music file.
+
+        """
         for input_text in self.input_list:
             self.TAGS_DICT[input_text] = self.ids[input_text].text
         self.differentiated_input_dict = {key: self.TAGS_DICT[key] for key in
@@ -251,13 +269,11 @@ class TagEditorLayout(BoxLayout):
         for input_text in self.input_list:
             self.ids[input_text].text = debug_dict[
                 re.sub("Input", "", input_text)]
-            self.ids[input_text].cursor = (0, 0)
+            self.ids[input_text].cursor = (0, 0)    # Resets cursor position.
             self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
 
 class MetadorGui(App):
-
-    DIFF = int()
 
     def build(self):
         Window.bind(on_dropfile=self.drop_file_event)
@@ -291,6 +307,7 @@ class MetadorGui(App):
         return self.root_layout
 
     def modal_config(self):
+        """Create and configure all modal (Popup) widgets."""
         self.drag_modal = BaseModal(pos_hint={"x": 0.05, "y": 0.45})
         self.drag_modal.children[0].text = "Drag Here Your Destination Folder"
         self.converter_modal = BaseModal(pos_hint={"x": 0.6, "y": 0.5})
@@ -335,7 +352,7 @@ class MetadorGui(App):
             # In case there's no existing file tree.
             return
 
-    def file_doubleclick_handler(self,tree_instnace,node):
+    def file_doubleclick_handler(self, tree_instnace, node):
         if self.editor_carousel.index == 0:
             return
         else:
