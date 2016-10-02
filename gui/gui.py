@@ -2,7 +2,6 @@
 import re
 import os
 import os.path
-import threading
 import scandir
 import sys
 from kivy.uix.spinner import Spinner
@@ -11,30 +10,101 @@ from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
 from kivy.app import App
-from kivy.uix.behaviors import DragBehavior
 from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.treeview import TreeView
 from kivy.uix.treeview import TreeViewLabel, TreeViewNode
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.button import Button
+from kivy.uix.button import Button, ButtonBehavior
 from kivy.uix.label import Label
 from kivy.graphics import Rectangle
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspinner import ProgressSpinner
+from kivy.garden.progressspiner import ProgressSpinner
+from kivy.garden.contextmenu import ContextMenu, ContextMenuTextItem
 from kivy.core.window import Window
 from kivy.core.image import ImageData
-from gui_classes import AnimatedBoxLayout
-from meta_utils import time_decorator
+from gui_classes import AnimatedBoxLayout, HoverBehavior
 
+"""EXPERIMENTAL WIDGETS:"""
+
+
+class HoverButton(Button, HoverBehavior):
+    pass
+
+
+class HoverLabel(Label,HoverBehavior):
+    pass
+
+
+class FolderLayout(BoxLayout):
+    path = StringProperty("")
+    is_mapped = BooleanProperty(True)
+    node_type = StringProperty("Folder")
+    text = StringProperty("")
+
+"""Layouts:"""
+
+class AppMenuLayout(BoxLayout):
+    pass
 
 class ConverterLayout(BoxLayout):
     """Layout that hosts the file converter widgets"""
 
+
+class BottomLayout(FloatLayout):
+    pass
+
+
+class LeftLayout(BoxLayout):
+    pass
+
+
+class TagEditorLayout(BoxLayout):
+    """
+    Layout for the all widgets related to the manual tag editor.
+
+    When pressing the 'Apply Changes' button, only the text inputs that were
+    modified by the user are to be input-argument for tags-writing method.
+    (Purpose of the Differentiated input dictionary)
+
+    """
+
+    TAGS_DICT = {}
+
+    def __init__(self):
+        super(TagEditorLayout, self).__init__()
+        self.input_list = [x for x in self.ids.keys() if "InputArtist" in x]
+        self.previous_input_dict = {"InputArtist": ""}
+        self.differentiated_input_dict = {}
+
+    def print_text_input(self):
+        """
+        Future 'Apply Changes' method for writing tags to the selected
+        music file.
+
+        """
+        for input_text in self.input_list:
+            self.TAGS_DICT[input_text] = self.ids[input_text].text
+        self.differentiated_input_dict = {key: self.TAGS_DICT[key] for key in
+                                          self.TAGS_DICT if self.TAGS_DICT[key] !=
+                                          self.previous_input_dict[key]}
+        print self.differentiated_input_dict
+
+    def input_text_change(self, tree, tree_node):
+        debug_dict = {"Artist": "{}".format(tree_node.path)}
+        self.previous_input_dict = {"InputArtist": "{}".format(tree_node.path)}
+        for input_text in self.input_list:
+            self.ids[input_text].text = debug_dict[
+                re.sub("Input", "", input_text)]
+            self.ids[input_text].cursor = (0, 0)    # Resets cursor position.
+            self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
+
+
+"""Labels and Buttons:"""
 
 class EditorLabel(Label):
     """Label Class for editor text input headers."""
@@ -71,12 +141,13 @@ class StandardViewLabel(TreeViewLabel):
     node_type = StringProperty("Root")
 
 
-class BottomLayout(FloatLayout):
-    pass
+class CoverArtImage(ButtonBehavior,Image):
+    def __init__(self, **kwargs):
+        super(CoverArtImage, self).__init__(**kwargs)
+        self.source = "C:\Users\Master\Pictures\icons\music_icon_3.png"
 
 
-class LeftLayout(BoxLayout):
-    pass
+"""COMPLEX GUI OBJECTS:"""
 
 
 class BaseModal(ModalView):
@@ -119,6 +190,10 @@ class DynamicTree(TreeView):
         return True
 
     def select_node(self, node):
+        if self.selected_node:
+            self.deselected_node = self.selected_node
+        else:
+            self.deselected_node = None
         super(DynamicTree, self).select_node(node)
         self.dispatch("on_select", node)
 
@@ -132,7 +207,9 @@ class DynamicTree(TreeView):
         pass
 
     def on_select(self, node):
-        pass
+        if self.deselected_node:
+            self.deselected_node.shorten = True
+        node.shorten = False
 
     def check_for_directory(self, node):
         """Read the contents of the folder represented by 'node' argument."""
@@ -220,6 +297,8 @@ class ConverterList(DynamicTree):
         If input_node already exists in the list widget, it removes it.
 
         """
+        if not input_node:
+            return
         self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
                           not sub_node.text == "Root"]
         self.node_path_list = [n_path.path for n_path in self.node_list]
@@ -229,48 +308,6 @@ class ConverterList(DynamicTree):
         else:
             [self.remove_node(to_remove_node) for to_remove_node in
              self.node_list if to_remove_node.path == input_node.path]
-
-
-class TagEditorLayout(BoxLayout):
-    """
-    Layout for the all widgets related to the manual tag editor.
-
-    When pressing the 'Apply Changes' button, only the text inputs that were
-    modified by the user are to be input-argument for tags-writing method.
-    (Purpose of the Differentiated input dictionary)
-
-    """
-
-    TAGS_DICT = {}
-
-    def __init__(self):
-        super(TagEditorLayout, self).__init__()
-        self.input_list = [x for x in self.ids.keys() if "InputArtist" in x]
-        self.previous_input_dict = {"InputArtist": ""}
-        self.differentiated_input_dict = {}
-
-    def print_text_input(self):
-        """
-        Future 'Apply Changes' method for writing tags to the selected
-        music file.
-
-        """
-        for input_text in self.input_list:
-            self.TAGS_DICT[input_text] = self.ids[input_text].text
-        self.differentiated_input_dict = {key: self.TAGS_DICT[key] for key in
-                                          self.TAGS_DICT if self.TAGS_DICT[key] !=
-                                          self.previous_input_dict[key]}
-        print self.differentiated_input_dict
-
-    def input_text_change(self, tree, tree_node):
-        self.ids["lbl_file"].text = tree_node.path
-        debug_dict = {"Artist": "{}".format(tree_node.path)}
-        self.previous_input_dict = {"InputArtist": "{}".format(tree_node.path)}
-        for input_text in self.input_list:
-            self.ids[input_text].text = debug_dict[
-                re.sub("Input", "", input_text)]
-            self.ids[input_text].cursor = (0, 0)    # Resets cursor position.
-            self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
 
 class MetadorGui(App):
@@ -289,6 +326,7 @@ class MetadorGui(App):
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
+        self.app_menu_layout = AppMenuLayout()
         self.mapping_event("D:\The Music")
         self.tree_view.id = "tree_view_id"
         self.scroll_layout = ScrollView()
@@ -301,11 +339,13 @@ class MetadorGui(App):
         self.left_layout.add_widget(self.scroll_layout)
         self.upper_layout.add_widget(self.left_layout)
         self.upper_layout.add_widget(self.editor_carousel)
+        self.root_layout.add_widget(self.app_menu_layout)
         self.root_layout.add_widget(self.upper_layout)
         self.root_layout.add_widget(self.bottom_layout)
 
         return self.root_layout
 
+    """WIDGETS CONFIG"""
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
         self.drag_modal = BaseModal(pos_hint={"x": 0.05, "y": 0.45})
@@ -313,6 +353,7 @@ class MetadorGui(App):
         self.converter_modal = BaseModal(pos_hint={"x": 0.6, "y": 0.5})
         self.converter_modal.children[0].text = "Drag Here Your Output Folder"
 
+    """APP EVENTS"""
     def drop_file_event(self, window_instance, drop_file_string):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
@@ -325,7 +366,6 @@ class MetadorGui(App):
                                         self.editor_carousel.index == 1 and \
                                         self.converter_modal.is_open:
 
-            print self.converter_modal.is_open
             self.converter_layout.ids.converter_output_text_input.text\
                 = drop_file_string
             self.converter_modal.dismiss()
@@ -371,7 +411,6 @@ class MetadorGui(App):
 
     def tree_loading_stop(self):
         self.left_layout.ids.tree_progress.stop_spinning()
-
 
 if __name__ == '__main__':
     MetadorGui().run()
