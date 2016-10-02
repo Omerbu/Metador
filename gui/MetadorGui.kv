@@ -3,10 +3,11 @@
 <Button>:
     markup: True
 
-<TextInput>:
+<EditorTextInput@TextInput>:
+    size_hint:1,None
+    size: 0,30
     multiline: False
     use_bubble: True
-
 
 <FolderLabel>:
     text_size: root.width, None
@@ -52,28 +53,33 @@
         text_size: self.size
 
 <EditorLabel>:
+    size_hint: 1,None
+    size:0,25
     bold:True
 
 <LeftLayout>:
+    spacing: 5
     orientation:"vertical"
     BoxLayout:
         id:tree_button_layout
         size_hint: 1, 0.05
-        Button:
+        ColorButton:
             text:"Change Directory"
             on_press: app.drag_modal.open()
         ProgressSpinner:
+            color: 1,1,1,1
+            size_hint: 0.4,1
             id: tree_progress
             auto_start: False
             speed:2
-        Button:
+        ColorButton:
             text:"Refresh"
             on_press: app.tree_refresh()
 
 <TagEditorLayout>:
     orientation: "vertical"
     BoxLayout:
-        size_hint_y: 4.5
+        size_hint:1, 4.5
         EditorLabel:
             id: lbl_file
             text: "Artist Bio"
@@ -86,53 +92,62 @@
     EditorLabel:
         id: lbl_title
         text: "Title:"
-    TextInput:
+    EditorTextInput:
         id: InputTitle
     EditorLabel:
         id: label_artist
         text: "Artist:"
-    TextInput:
+    EditorTextInput:
         id: InputArtist
     EditorLabel:
         id: lbl_tracknumber
         text: "Track Number:"
-    TextInput:
+    EditorTextInput:
         id: InputTracknumber
         input_filter: "int"
     EditorLabel:
         id: lbl_album
         text: "Album:"
-    TextInput:
+    EditorTextInput:
         id: InputAlbum
     EditorLabel:
         id: lbl_date
         text: "Release Date:"
-    TextInput:
+    EditorTextInput:
         id: InputDate
     EditorLabel:
         id: lbl_genre
         text: "Genre:"
-    TextInput:
+    EditorTextInput:
         id: InputGenre
     EditorLabel:
         id: lbl_album_artist
         text: "Album Artist:"
-    TextInput:
+    EditorTextInput:
         id: InputAlbumartist
     BoxLayout:
+        spacing: 2
+        size_hint: 1,None
+        size: 0,30
         orientation: "horizontal"
-        Button:
-            text: "Metador This!"
-            on_press:app.bottom_layout.ids.metador_progress_bar.value +=10
-        Button:
+        ColorButton:
+            bold:True
+            text: "Tag This!"
+            on_press:print str(self.size)
+        ColorButton:
+            background_color:[0,0.6,0.1,1]
+            background_color_normal: [0,0.6,0.1,1]
+            background_color_down:[0,1,0,1]
             text: "[b][color=ffffff]Apply Changes[/color][/b]"
-            background_normal: ""
-            background_down: "atlas://data/images/defaulttheme/button_pressed"
-            background_color:(0.75,0,0,1)
             on_press: root.print_text_input()
             markup: True
 
+<BlackSpinner@SpinnerOption>:
+    background_color:(0,0.4,0.8,1)
+    background_normal: ""
+
 <ConverterLayout>:
+    spacing: 3
     orientation: "vertical"
     Label:
         size_hint:1,0.1
@@ -145,6 +160,9 @@
             text: "Convert to:"
             size_hint: 0.4, 1
         Spinner:
+            background_color:(0,0.4,0.8,1)
+            background_normal: ""
+            option_cls: "BlackSpinner"
             text: "File Format"
             bold: True
             values: ("FLAC", "ALAC", "MP3", "OGG")
@@ -170,16 +188,17 @@
         TextInput:
             id: converter_output_text_input
             text: "Destination Folder"
-        Button:
+        ColorButton:
             size_hint: 0.1,0.98
             text: "..."
             on_press: app.converter_modal.open()
     BoxLayout:
+        spacing: 2
         size_hint: 1,0.08
-        Button:
+        ColorButton:
             text: "Clear"
             on_press: converter_list.clear_tree_view()
-        Button:
+        ColorButton:
             text: "Convert"
 
 
@@ -193,14 +212,15 @@
 <SpinnerOption>:
     size: 50,28
 
-
-
 <AppMenuLayout>:
     size_hint:1,0.04
-    HoverButton:
+    DropDownRootButton:
+        dropdown:app.about
         background_color:(0,0,0,1)
         background_normal: ""
-        text: "Option3" if self.hovered else "About"
+        text: "About"
+        on_enter: app.about.open(self)
+        on_leave: self.leave_handler()
     FloatLayout:
         size_hint:10,1
         canvas:
@@ -216,17 +236,37 @@
         id:carousel_id
         scroll_timeout: 200
         FloatLayout:
-            Button:
+            ColorButton:
+                background_color:[0.75,0,0,1]
+                background_color_normal:[0.75,0,0,1]
                 id: btn1
                 size_hint: 0.15, 0.7
                 pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
-                text: "Metador Me!"
+                text: "Metador!"
+                bold:True
                 on_press:carousel_id.load_next()
-            Button:
+            ColorButton:
                 id: editor_converter_button
                 text: "Converter"
-                size_hint: 0.1, 0.6
-                pos_hint: {"x": 0.895,"y":0.18}
+                size_hint: 0.1, 0.7
+                pos_hint: {"x": 0.895,"y":0.16}
                 on_press: app.change_editor_carousel()
         ProgressBar:
             id: metador_progress_bar
+
+
+<AppMenuButton@ColorButton>:
+    height: 25
+    size_hint_y: None
+    background_color:[0,0,0,1]
+
+<AboutDropDown>:
+    AppMenuButton:
+        background_color_normal:[0,0,0,1]
+        text: "Help"
+        on_press: print "1"
+        on_release: root.dismiss()
+    AppMenuButton:
+        text: 'About'
+        on_press: print "2"
+        on_release: root.dismiss()

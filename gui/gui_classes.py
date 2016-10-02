@@ -1,6 +1,27 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.properties import BooleanProperty, ObjectProperty,ListProperty
 from kivy.core.window import Window
+from kivy.uix.button import Button
+
+
+class ColorButton(Button):
+    """
+    Button with a possibility to change the color on on_press (similar to background_down in normal Button widget)
+    """
+    background_color_normal = ListProperty([0, 0.4, 0.8, 1])
+    background_color_down = ListProperty([0, 0.7, 1, 1])
+
+    def __init__(self, **kwargs):
+        super(ColorButton, self).__init__(**kwargs)
+        self.background_normal = ""
+        self.background_down = ""
+        self.background_color = self.background_color_normal
+
+    def on_press(self):
+        self.background_color = self.background_color_down
+
+    def on_release(self):
+        self.background_color = self.background_color_normal
 
 
 class AnimatedBoxLayout(BoxLayout):

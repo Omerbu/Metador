@@ -9,6 +9,7 @@ from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
+from kivy.uix.dropdown import DropDown
 from kivy.app import App
 from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
@@ -23,20 +24,32 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspiner import ProgressSpinner
-from kivy.garden.contextmenu import ContextMenu, ContextMenuTextItem
+from kivy.garden.progressspinner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
-from gui_classes import AnimatedBoxLayout, HoverBehavior
+from gui_classes import AnimatedBoxLayout, HoverBehavior, ColorButton
 
 """EXPERIMENTAL WIDGETS:"""
 
 
-class HoverButton(Button, HoverBehavior):
-    pass
+class AboutDropDown(DropDown, HoverBehavior):
+
+    def on_leave(self):
+        self.dismiss()
 
 
-class HoverLabel(Label,HoverBehavior):
+class DropDownRootButton(ColorButton, HoverBehavior):
+    dropdown = ObjectProperty("")
+
+    def leave_handler(self):
+        if self.dropdown.collide_point(Window.mouse_pos[0],
+                                       Window.mouse_pos[1]):
+            return
+        else:
+            self.dropdown.dismiss()
+
+
+class HoverLabel(Label, HoverBehavior):
     pass
 
 
@@ -48,8 +61,10 @@ class FolderLayout(BoxLayout):
 
 """Layouts:"""
 
+
 class AppMenuLayout(BoxLayout):
     pass
+
 
 class ConverterLayout(BoxLayout):
     """Layout that hosts the file converter widgets"""
@@ -141,7 +156,7 @@ class StandardViewLabel(TreeViewLabel):
     node_type = StringProperty("Root")
 
 
-class CoverArtImage(ButtonBehavior,Image):
+class CoverArtImage(ButtonBehavior, Image):
     def __init__(self, **kwargs):
         super(CoverArtImage, self).__init__(**kwargs)
         self.source = "C:\Users\Master\Pictures\icons\music_icon_3.png"
@@ -316,13 +331,15 @@ class MetadorGui(App):
         Window.bind(on_dropfile=self.drop_file_event)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.modal_config()
+        self.about = AboutDropDown()
         self.root_layout = BoxLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal")
         self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=0.3)
         self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
-        self.tree_view = DynamicTree(size_hint_y=None, hide_root=True)
+        self.tree_view = DynamicTree(size_hint_y=None, hide_root=True,
+                                     indent_level=11)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
