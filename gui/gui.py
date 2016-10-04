@@ -3,7 +3,6 @@ import re
 import os
 import os.path
 import scandir
-import sys
 from kivy.uix.spinner import Spinner
 from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
@@ -17,40 +16,20 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.treeview import TreeView
 from kivy.uix.treeview import TreeViewLabel, TreeViewNode
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.button import Button, ButtonBehavior
+from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.graphics import Rectangle
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspinner import ProgressSpinner
+from kivy.garden.progressspiner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
-from gui_classes import AnimatedBoxLayout, HoverBehavior, ColorButton
+from gui_classes import AnimatedBoxLayout, HoverBehavior, \
+                        AppMenuHoverBehavior, AppMenuColor
 
 """EXPERIMENTAL WIDGETS:"""
-
-
-class AboutDropDown(DropDown, HoverBehavior):
-
-    def on_leave(self):
-        self.dismiss()
-
-
-class DropDownRootButton(ColorButton, HoverBehavior):
-    dropdown = ObjectProperty("")
-
-    def leave_handler(self):
-        if self.dropdown.collide_point(Window.mouse_pos[0],
-                                       Window.mouse_pos[1]):
-            return
-        else:
-            self.dropdown.dismiss()
-
-
-class HoverLabel(Label, HoverBehavior):
-    pass
 
 
 class FolderLayout(BoxLayout):
@@ -121,17 +100,18 @@ class TagEditorLayout(BoxLayout):
 
 """Labels and Buttons:"""
 
+
 class EditorLabel(Label):
     """Label Class for editor text input headers."""
 
 
 class FileLabel(Label):
-    file_icon = Image(source="C:\Users\Master\Pictures\icons\music_icon_4.png",
+    file_icon = Image(source="icons\\file_icon.png",
                       mipmap=True)
 
 
 class FolderLabel(Label):
-    folder_icon = Image(source="C:\Users\Master\Pictures\icons\\folder.png",
+    folder_icon = Image(source="icons\\folder_icon.png",
                         mipmap=True)
 
 
@@ -159,8 +139,58 @@ class StandardViewLabel(TreeViewLabel):
 class CoverArtImage(ButtonBehavior, Image):
     def __init__(self, **kwargs):
         super(CoverArtImage, self).__init__(**kwargs)
-        self.source = "C:\Users\Master\Pictures\icons\music_icon_3.png"
+        self.source = "icons\\music_cover.png"
 
+"""APP MENU ELEMENTS:"""
+
+class AppMenuButton(AppMenuColor, AppMenuHoverBehavior):
+
+    def on_enter(self):
+        self.background_color = self.background_color_down
+
+    def on_leave(self):
+        self.background_color = self.background_color_normal
+
+
+class DropDownRootButton(AppMenuColor, HoverBehavior):
+    dropdown_object = ObjectProperty("")
+
+    def leave_handler(self):
+        if self.dropdown_object.collide_point(Window.mouse_pos[0],
+                                       Window.mouse_pos[1]):
+            return
+        self.dropdown_object.dismiss()
+
+    def on_release(self):
+        self.dropdown_object.open(self) if not self.dropdown_object.is_open \
+           else None
+
+    def on_enter(self):
+        self.background_color = self.background_color_down
+
+    def on_leave(self):
+        self.background_color = self.background_color_normal
+
+
+class AboutDropDown(DropDown, HoverBehavior):
+
+    def __init__(self, *args, **kwargs):
+        super(AboutDropDown, self).__init__(*args, **kwargs)
+        self.is_open = BooleanProperty(False)
+
+    def open(self, widget):
+        super(AboutDropDown, self).open(widget)
+        self.is_open = True
+
+    def on_dismiss(self):
+        self.is_open = False
+
+    def on_leave(self):
+        if self.attach_to:
+            if self.attach_to.collide_point(Window.mouse_pos[0],
+                                         Window.mouse_pos[1]):
+                return
+        self.dismiss()
 
 """COMPLEX GUI OBJECTS:"""
 
@@ -176,12 +206,20 @@ class BaseModal(ModalView):
         self.is_open = False
 
 
+class DragModal(BaseModal):
+    pass
+
+
+class AboutModal(BaseModal):
+    pass
+
+
 class DynamicTree(TreeView):
 
     __events__ = ('on_node_expand', 'on_node_collapse', 'on_select',
-                  'on_file_doubleclick')
+                  'on_file_doubleclick', 'on_folder_doubleclick',
+                  'on_root_doubleclick')
 
-    FILTER_RE = "(^[^.]*$)|(.*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc))"
     FILE_EXT_RE = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)$"
 
     def on_touch_down(self, touch):
@@ -197,8 +235,10 @@ class DynamicTree(TreeView):
             if touch.is_double_tap:
                 if node.node_type == "File":
                     self.dispatch("on_file_doubleclick", node)
+                elif node.node_type == "Root":
+                    self.dispatch("on_root_doubleclick", node)
                 else:
-                    self.toggle_node(node)
+                    self.dispatch("on_folder_doubleclick", node)
             else:
                 self.select_node(node)
                 node.dispatch('on_touch_down', touch)
@@ -218,7 +258,13 @@ class DynamicTree(TreeView):
         else:
             self.check_for_directory(node)
 
+    def on_root_doubleclick(self, node):
+        pass
+
     def on_file_doubleclick(self, node):
+        pass
+
+    def on_folder_doubleclick(self,node):
         pass
 
     def on_select(self, node):
@@ -331,26 +377,29 @@ class MetadorGui(App):
         Window.bind(on_dropfile=self.drop_file_event)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.modal_config()
-        self.about = AboutDropDown()
+        self.dropdown_config()
         self.root_layout = BoxLayout(orientation="vertical")
-        self.upper_layout = AnimatedBoxLayout(orientation="horizontal")
+        self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
+                                              spacing=15)
         self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=0.3)
         self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
+        self.bottom_layout = BottomLayout()
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True,
-                                     indent_level=11)
+                                     indent_level=12)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
+        self.tree_view.bind(on_folder_doubleclick=self.folder_doubleclick_handler)
+        self.tree_view.bind(on_root_doubleclick=self.root_doubleclick_handler)
         self.app_menu_layout = AppMenuLayout()
         self.mapping_event("D:\The Music")
         self.tree_view.id = "tree_view_id"
+        self.tree_loading_stop()
         self.scroll_layout = ScrollView()
         self.scroll_layout.scroll_distance = 30
-        self.bottom_layout = BottomLayout()
         self.scroll_layout.add_widget(self.tree_view)
-        self.tree_loading_stop()
         self.editor_carousel.add_widget(self.tag_editor)
         self.editor_carousel.add_widget(self.converter_layout)
         self.left_layout.add_widget(self.scroll_layout)
@@ -365,17 +414,21 @@ class MetadorGui(App):
     """WIDGETS CONFIG"""
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
-        self.drag_modal = BaseModal(pos_hint={"x": 0.05, "y": 0.45})
+        self.drag_modal = DragModal(pos_hint={"x": 0.05, "y": 0.45})
         self.drag_modal.children[0].text = "Drag Here Your Destination Folder"
-        self.converter_modal = BaseModal(pos_hint={"x": 0.6, "y": 0.5})
+        self.converter_modal = DragModal(pos_hint={"x": 0.6, "y": 0.5})
         self.converter_modal.children[0].text = "Drag Here Your Output Folder"
+        self.about_modal = AboutModal()
+
+    def dropdown_config(self):
+        """Create and configure all dropdown widgets, mainly  the app menu"""
+        self.about = AboutDropDown()
 
     """APP EVENTS"""
     def drop_file_event(self, window_instance, drop_file_string):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
-                                        window_instance.mouse_pos[1])and \
-                                        os.path.isdir(drop_file_string):
+                                        window_instance.mouse_pos[1]):
             self.drag_modal.dismiss()
             self.mapping_event(drop_file_string)
         elif self.editor_carousel.collide_point(window_instance.mouse_pos[0],
@@ -395,13 +448,14 @@ class MetadorGui(App):
             except StopIteration:
                 self.mapping_schedule.cancel()
                 self.tree_loading_stop()
-
+        if not os.path.isdir(path_string):
+            return
         self.tree_loading_start()
         self.tree_view.clear_tree_view()
         self.tree_generator = self.tree_view.populate_tree_view(path_string)
         self.mapping_schedule = Clock.schedule_interval(mapping_callback, 0)
 
-    def tree_refresh(self):
+    def tree_refresh(self,):
         """Remaps the folder tree with the same root directory."""
         try:
             self.mapping_event(self.tree_view.root_node.path)
@@ -409,11 +463,18 @@ class MetadorGui(App):
             # In case there's no existing file tree.
             return
 
+    def folder_doubleclick_handler(self, tree_instance, node):
+        self.mapping_event(node.path)
+
     def file_doubleclick_handler(self, tree_instnace, node):
         if self.editor_carousel.index == 0:
             return
         else:
             self.converter_layout.ids.converter_list.modify_list(node)
+
+    def root_doubleclick_handler(self, tree_instance, node):
+        parent_path = os.path.split(node.path)[0]
+        self.mapping_event(parent_path)
 
     def change_editor_carousel(self):
         if self.editor_carousel.index == 0:

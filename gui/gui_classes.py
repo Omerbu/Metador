@@ -1,7 +1,13 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import BooleanProperty, ObjectProperty,ListProperty
+from kivy.uix.gridlayout import GridLayout,GridLayoutException
+from kivy.uix.scrollview import ScrollView
+from kivy.properties import BooleanProperty, ObjectProperty, \
+                            ListProperty, StringProperty,NumericProperty
 from kivy.core.window import Window
 from kivy.uix.button import Button
+
+
+"""Color Buttons"""
 
 
 class ColorButton(Button):
@@ -22,6 +28,99 @@ class ColorButton(Button):
 
     def on_release(self):
         self.background_color = self.background_color_normal
+
+
+class BlackButton(ColorButton):
+    background_color_normal = ListProperty([0, 0, 0, 1])
+    background_color_down = ListProperty([0, 0, 0, 1])
+
+
+class BlueButton(ColorButton):
+    background_color_normal = ListProperty([0, 0.4, 0.8, 1])
+    background_color_down = ListProperty([0, 0.7, 1, 1])
+
+
+class GreenButton(ColorButton):
+    background_color_normal = ListProperty([0, 0.6, 0.1, 1])
+    background_color_down = ListProperty([0, 1, 0, 1])
+
+
+class RedButton(ColorButton):
+    background_color_normal= ListProperty([0.75, 0, 0, 1])
+    background_color_down= ListProperty([1, 0, 0, 2])
+
+
+class AppMenuColor(ColorButton):
+    background_color_normal= ListProperty([0, 0, 0, 1])
+    background_color_down = ListProperty([0, 0.4, 0.8, 1])
+
+"""Custom Widgets"""
+
+
+class ScrollableLabel(ScrollView):
+    text = StringProperty("")
+    font_size = NumericProperty(15)
+
+
+class HoverBehavior(object):
+    """Hover behavior.
+
+    :Events:
+        `on_enter`
+            Fired when mouse enter the bbox of the widget.
+        `on_leave`
+            Fired when the mouse exit the widget
+    """
+
+    hovered = BooleanProperty(False)
+    border_point = ObjectProperty(None)
+    '''Contains the last relevant point received by the Hoverable. This can
+    be used in `on_enter` or `on_leave` in order to know where was dispatched the event.
+    '''
+
+    def __init__(self, **kwargs):
+        self.register_event_type('on_enter')
+        self.register_event_type('on_leave')
+        Window.bind(mouse_pos=self.on_mouse_pos)
+        super(HoverBehavior, self).__init__(**kwargs)
+
+    def on_mouse_pos(self, *args):
+        pos = args[1]
+        inside = self.collide_point(*pos)
+        if self.hovered == inside:
+            # We have already done what was needed
+            return
+        self.border_point = pos
+        self.hovered = inside
+        if inside:
+            self.dispatch('on_enter')
+        else:
+            self.dispatch('on_leave')
+
+    def on_enter(self):
+        pass
+
+    def on_leave(self):
+        pass
+
+
+class AppMenuHoverBehavior(HoverBehavior):
+
+    def on_mouse_pos(self, *args):
+        pos = args[1]
+        pos = (pos[0], pos[1]-530)
+        inside = self.collide_point(*pos)
+        if self.hovered == inside:
+            # We have already done what was needed
+            return
+        self.border_point = pos
+        self.hovered = inside
+        if inside:
+            self.dispatch('on_enter')
+        else:
+            self.dispatch('on_leave')
+
+"""Layouts"""
 
 
 class AnimatedBoxLayout(BoxLayout):
@@ -122,46 +221,3 @@ class AnimatedBoxLayout(BoxLayout):
                 c.width = int(w)
                 c.height = int(h)
                 y += h + spacing
-
-
-class HoverBehavior(object):
-    """Hover behavior.
-
-    :Events:
-        `on_enter`
-            Fired when mouse enter the bbox of the widget.
-        `on_leave`
-            Fired when the mouse exit the widget
-    """
-
-    hovered = BooleanProperty(False)
-    border_point = ObjectProperty(None)
-    '''Contains the last relevant point received by the Hoverable. This can
-    be used in `on_enter` or `on_leave` in order to know where was dispatched the event.
-    '''
-
-    def __init__(self, **kwargs):
-        self.register_event_type('on_enter')
-        self.register_event_type('on_leave')
-        Window.bind(mouse_pos=self.on_mouse_pos)
-        super(HoverBehavior, self).__init__(**kwargs)
-
-
-    def on_mouse_pos(self, *args):
-        pos = args[1]
-        inside = self.collide_point(*pos)
-        if self.hovered == inside:
-            # We have already done what was needed
-            return
-        self.border_point = pos
-        self.hovered = inside
-        if inside:
-            self.dispatch('on_enter')
-        else:
-            self.dispatch('on_leave')
-
-    def on_enter(self):
-        pass
-
-    def on_leave(self):
-        pass

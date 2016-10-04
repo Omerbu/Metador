@@ -1,17 +1,11 @@
 #:kivy 1.9.1
-
+#:import webbrowser webbrowser
 <Button>:
     markup: True
 
-<EditorTextInput@TextInput>:
-    size_hint:1,None
-    size: 0,30
-    multiline: False
-    use_bubble: True
-
 <FolderLabel>:
     text_size: root.width, None
-    mipmap: True
+    mipmap: False
     padding_y: 4
     bold: False
     size:self.texture_size
@@ -20,7 +14,7 @@
         Rectangle:
             texture:root.folder_icon.texture
             pos: root.pos[0] -35, root.center_y -7
-            size: (15, 15)
+            size: (17, 13)
 
 <FileLabel>:
     text_size: root.width, None
@@ -52,43 +46,61 @@
         text: root.text
         text_size: self.size
 
+<ScrollableLabel>:
+    Label:
+        size_hint_y: None
+        height: self.texture_size[1]
+        text_size: self.width, None
+        text: root.text
+        font_size: root.font_size
+
 <EditorLabel>:
     size_hint: 1,None
     size:0,25
     bold:True
 
+<EditorTextInput@TextInput>:
+    size_hint:1,None
+    size: 0,29
+    multiline: False
+    use_bubble: True
+
 <LeftLayout>:
-    spacing: 5
+    spacing: 2
+    size_hint: 1.05,1
     orientation:"vertical"
     BoxLayout:
         id:tree_button_layout
-        size_hint: 1, 0.05
-        ColorButton:
+        size_hint: 1, None
+        size:0,28
+        BlueButton:
             text:"Change Directory"
             on_press: app.drag_modal.open()
         ProgressSpinner:
-            color: 1,1,1,1
-            size_hint: 0.4,1
+            size_hint:0.5,1
+            color: 0,0.4,0.8,2
             id: tree_progress
             auto_start: False
             speed:2
-        ColorButton:
+        BlueButton:
             text:"Refresh"
             on_press: app.tree_refresh()
 
 <TagEditorLayout>:
     orientation: "vertical"
     BoxLayout:
+        spacing: 2
         size_hint:1, 4.5
-        EditorLabel:
+        ScrollableLabel:
             id: lbl_file
-            text: "Artist Bio"
+            text: "Camel are an English progressive rock band formed in 1971. Led by founding member Andrew Latimer, they have produced 14 original studio albums, 14 singles plus numerous other compilation and live albums."
             text_size: self.size
-            padding_x: 5
-            valign: "middle"
+            font_size: 15
+            valign: "top"
+            halign: "left"
         CoverArtImage:
+            mipmap:True
             size_hint:0.5,1
-
     EditorLabel:
         id: lbl_title
         text: "Title:"
@@ -130,15 +142,13 @@
         size_hint: 1,None
         size: 0,30
         orientation: "horizontal"
-        ColorButton:
+        BlueButton:
             bold:True
-            text: "Tag This!"
-            on_press:print str(self.size)
-        ColorButton:
-            background_color:[0,0.6,0.1,1]
-            background_color_normal: [0,0.6,0.1,1]
-            background_color_down:[0,1,0,1]
-            text: "[b][color=ffffff]Apply Changes[/color][/b]"
+            text: "Auto-Tag This"
+            on_press:
+        GreenButton:
+            text: "Apply Changes"
+            bold:True
             on_press: root.print_text_input()
             markup: True
 
@@ -155,7 +165,8 @@
         text: "Music Converter"
         bold:True
     BoxLayout:
-        size_hint: 1,0.07
+        size_hint: 1,None
+        size: 0,30
         Label:
             text: "Convert to:"
             size_hint: 0.4, 1
@@ -168,7 +179,8 @@
             values: ("FLAC", "ALAC", "MP3", "OGG")
             sync_height: True
     Label:
-        size_hint: 1,0.12
+        size_hint: 1,None
+        size: 0,30
         text: "Files To Convert:"
         bold: True
     ScrollView:
@@ -180,7 +192,8 @@
             on_file_doubleclick: self.modify_list(self.selected_node)
             height: self.minimum_height
     BoxLayout:
-        size_hint: 1,0.08
+        size_hint: 1,None
+        size: 0,30
         Label:
             size_hint: 0.3,1
             text: "Destination:"
@@ -188,21 +201,24 @@
         TextInput:
             id: converter_output_text_input
             text: "Destination Folder"
-        ColorButton:
+        BlueButton:
             size_hint: 0.1,0.98
             text: "..."
             on_press: app.converter_modal.open()
     BoxLayout:
         spacing: 2
-        size_hint: 1,0.08
-        ColorButton:
+        size_hint: 1,None
+        size: 0,30
+        BlueButton:
+            bold: True
             text: "Clear"
             on_press: converter_list.clear_tree_view()
-        ColorButton:
+        GreenButton:
+            bold:True
             text: "Convert"
 
 
-<BaseModal>:
+<DragModal>:
     opacity: 1
     size_hint: (0.35, 0.1)
     Label:
@@ -213,13 +229,15 @@
     size: 50,28
 
 <AppMenuLayout>:
-    size_hint:1,0.04
+    size_hint:1,None
+    size: 0,25
     DropDownRootButton:
-        dropdown:app.about
+        dropdown_object:app.about
         background_color:(0,0,0,1)
+        background_color_normal:[0,0,0,1]
         background_normal: ""
         text: "About"
-        on_enter: app.about.open(self)
+        on_enter: self.dropdown_object.open(self)
         on_leave: self.leave_handler()
     FloatLayout:
         size_hint:10,1
@@ -231,42 +249,103 @@
                 pos: self.pos
 
 <BottomLayout>:
-    size_hint: 1, 0.08
+    size_hint: 1, None
+    size: 0,39
     Carousel:
         id:carousel_id
-        scroll_timeout: 200
+        scroll_timeout: -1
         FloatLayout:
-            ColorButton:
-                background_color:[0.75,0,0,1]
-                background_color_normal:[0.75,0,0,1]
-                id: btn1
-                size_hint: 0.15, 0.7
-                pos_hint: {"y" : (1- self.size_hint[1]) / 2,"x": (1- self.size_hint[0]) /2}
-                text: "Metador!"
-                bold:True
-                on_press:carousel_id.load_next()
-            ColorButton:
-                id: editor_converter_button
-                text: "Converter"
-                size_hint: 0.1, 0.7
-                pos_hint: {"x": 0.895,"y":0.16}
-                on_press: app.change_editor_carousel()
+            AnchorLayout:
+                anchor_x: "center"
+                anchor_y: "center"
+                RedButton:
+                    id: btn1
+                    size_hint: None, 0.8
+                    size: 160,0
+                    text: "Metador!"
+                    bold:True
+                    on_press:
+            AnchorLayout:
+                anchor_x: "right"
+                anchor_y: "center"
+                BlueButton:
+                    id: editor_converter_button
+                    text: "Converter"
+                    size_hint: None, 0.7
+                    size: 95,0
+                    on_press: app.change_editor_carousel()
         ProgressBar:
             id: metador_progress_bar
 
-
-<AppMenuButton@ColorButton>:
+<AppMenuButton>:
     height: 25
     size_hint_y: None
     background_color:[0,0,0,1]
+    background_color_normal:[0,0,0,1]
+    background_color_down:[0,0.4,0.8,1]
 
 <AboutDropDown>:
     AppMenuButton:
-        background_color_normal:[0,0,0,1]
+        background_color_normal:
         text: "Help"
-        on_press: print "1"
+        on_press:
         on_release: root.dismiss()
     AppMenuButton:
+        background_color_normal:[0,0,0,1]
         text: 'About'
-        on_press: print "2"
+        on_press:app.about_modal.open()
         on_release: root.dismiss()
+
+<AboutModal>:
+    background_color:[0,0,0,0.4]
+    size_hint: None,None
+    padding: 15,15
+    size: 250,350
+    BoxLayout:
+        spacing: 5
+        orientation:"vertical"
+        Label:
+            size_hint:1,0.2
+            text: "Metador Music Application"
+            bold:True
+            font_size: 16
+        Image:
+            mipmap:True
+            source: "icons\\music_cover.png"
+        Label:
+            size_hint:(1,0.1)
+            text: "Version 0.0.0.1"
+            font_size: 13
+        BoxLayout:
+            spacing: 3
+            orientation: "vertical"
+            Label:
+                font_size: 16
+                text:"Creators:"
+                bold:True
+            Label:
+                text:'Gil "Marlo" Harari'
+            Label:
+                text: 'Omer "Stringer" Buchnik'
+            Label:
+                text: 'Paz "Carcetti" Newman'
+        BoxLayout:
+            spacing: 3
+            orientation: "vertical"
+            Label:
+                font_size: 16
+                text:"Powered By:"
+                bold:True
+            Label:
+                text:"[ref=kivy][color=0099ff]Kivy[/color][/ref]"
+                markup: True
+                on_ref_press:webbrowser.open("https://kivy.org/#home")
+            Label:
+                text:"[ref=kivy][color=0099ff]AcoustID[/color][/ref]"
+                markup: True
+                on_ref_press:webbrowser.open("https://acoustid.org/")
+            Label:
+                text:"[ref=kivy][color=0099ff]Pygn[/color][/ref]"
+                markup: True
+                on_ref_press:webbrowser.open("https://github.com/cweichen/pygn")
+
