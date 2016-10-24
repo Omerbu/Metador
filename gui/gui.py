@@ -13,11 +13,13 @@ from kivy.app import App
 from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.treeview import TreeView
 from kivy.uix.treeview import TreeViewLabel, TreeViewNode
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
+from kivy.uix.checkbox import CheckBox
 from kivy.graphics import Rectangle
 from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from kivy.uix.textinput import TextInput
@@ -26,19 +28,23 @@ from kivy.graphics.texture import Texture
 from kivy.garden.progressspiner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
-from gui_classes import AnimatedBoxLayout, HoverBehavior, \
-                        AppMenuHoverBehavior, AppMenuColor
+from gui_classes import AnimatedBoxLayout, HoverBehavior,\
+                        AppMenuColor, TransparentButton
+from kivy.garden.iconfonts import iconfonts
+
+"""Config """
+Config.set('kivy', 'desktop', '1')
+
 
 """EXPERIMENTAL WIDGETS:"""
 
 
-class FolderLayout(BoxLayout):
-    path = StringProperty("")
-    is_mapped = BooleanProperty(True)
-    node_type = StringProperty("Folder")
-    text = StringProperty("")
-
 """Layouts:"""
+
+
+class RootLayout(BoxLayout):
+    back_texture = Image(source="icons\\blur_blue.jpg",
+                      mipmap=True)
 
 
 class AppMenuLayout(BoxLayout):
@@ -49,11 +55,15 @@ class ConverterLayout(BoxLayout):
     """Layout that hosts the file converter widgets"""
 
 
-class BottomLayout(FloatLayout):
+class BottomLayout(BoxLayout):
     pass
 
 
 class LeftLayout(BoxLayout):
+    pass
+
+
+class RightLayout(AnimatedBoxLayout):
     pass
 
 
@@ -105,51 +115,56 @@ class EditorLabel(Label):
     """Label Class for editor text input headers."""
 
 
-class FileLabel(Label):
-    file_icon = Image(source="icons\\file_icon.png",
+class FileNode(BoxLayout, TreeViewNode):
+    file_icon = Image(source="icons\\file_icon_white.png",
                       mipmap=True)
-
-
-class FolderLabel(Label):
-    folder_icon = Image(source="icons\\folder_icon.png",
-                        mipmap=True)
-
-
-class FileViewLabel(FileLabel, TreeViewNode):
-
+    file_size = StringProperty("")
     path = StringProperty("")
     is_mapped = BooleanProperty(True)
     node_type = StringProperty("File")
+    text = StringProperty("")
+    shorten = BooleanProperty(True)
+    color_selected = [.22, .25, .35, .45]
+    even_color = [.5, .5, .5, 0]
 
 
-class FolderViewLabel(FolderLabel, TreeViewNode):
-
+class FolderNode(BoxLayout, TreeViewNode):
+    file_icon = Image(source="icons\\grey_folder.png",
+                      mipmap=True)
     path = StringProperty("")
     is_mapped = BooleanProperty(True)
     node_type = StringProperty("Folder")
+    text = StringProperty("")
+    shorten = BooleanProperty(True)
+    color_selected = [.22, .25, .35, .45]
+    even_color = [.5, .5, .5, 0]
 
 
-class StandardViewLabel(TreeViewLabel):
+class RootNode(TreeViewLabel):
 
     path = StringProperty("")
     is_mapped = BooleanProperty(False)
     node_type = StringProperty("Root")
+    color_selected = [.22, .25, .35, .45]
 
 
 class CoverArtImage(ButtonBehavior, Image):
     def __init__(self, **kwargs):
         super(CoverArtImage, self).__init__(**kwargs)
-        self.source = "icons\\music_cover.png"
+        self.source = "icons\\cover_art.jpg"
 
 """APP MENU ELEMENTS:"""
 
-class AppMenuButton(AppMenuColor, AppMenuHoverBehavior):
 
-    def on_enter(self):
-        self.background_color = self.background_color_down
+class AppMenuButton(TransparentButton):
+    pass
+    # Currently Having Performance Issues:
 
-    def on_leave(self):
-        self.background_color = self.background_color_normal
+    # def on_enter(self):
+    #     self.background_color = self.background_color_down
+    #
+    # def on_leave(self):
+    #     self.background_color = self.background_color_normal
 
 
 class DropDownRootButton(AppMenuColor, HoverBehavior):
@@ -195,6 +210,7 @@ class AboutDropDown(DropDown, HoverBehavior):
 """COMPLEX GUI OBJECTS:"""
 
 
+
 class BaseModal(ModalView):
 
     is_open = BooleanProperty(False)
@@ -220,7 +236,8 @@ class DynamicTree(TreeView):
                   'on_file_doubleclick', 'on_folder_doubleclick',
                   'on_root_doubleclick')
 
-    FILE_EXT_RE = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)$"
+    FILE_FILTER = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)$"
+    MB_CONST = float(1048576)
 
     def on_touch_down(self, touch):
         node = self.get_node_at_pos(touch.pos)
@@ -264,7 +281,7 @@ class DynamicTree(TreeView):
     def on_file_doubleclick(self, node):
         pass
 
-    def on_folder_doubleclick(self,node):
+    def on_folder_doubleclick(self, node):
         pass
 
     def on_select(self, node):
@@ -280,33 +297,37 @@ class DynamicTree(TreeView):
         for sub_dir in self.filter_dir_gen(node.path):
             sub_dir_path = sub_dir.path
             if sub_dir.is_file():
-                self.add_node(FileViewLabel(path=sub_dir_path,
-                                            text=unicode(sub_dir.name)), node)
+                sub_dir_size = str(round(sub_dir.stat()[6] / self.MB_CONST, 1))
+                self.add_node(FileNode(path=sub_dir_path,
+                                       text=unicode(sub_dir.name),
+                                       file_size=sub_dir_size), node)
             else:
-                sub_folder = FolderViewLabel(path=sub_dir.path, text=sub_dir.name)
+                sub_folder = FolderNode(path=sub_dir.path, text=sub_dir.name)
                 self.add_node(sub_folder, node)
                 if self.empty_dir_check(sub_dir_path):
-                    none_node = FileViewLabel(path="", text="")
+                    none_node = RootNode(path="", text="")
                     sub_folder.is_mapped = False
                     self.add_node(none_node, sub_folder)
 
     def populate_tree_view(self, path):
         """Only triggered at file tree initialization."""
         path = unicode(path)
-        self.root_node = StandardViewLabel(path=path, text=path, is_mapped=True)
+        self.root_node = RootNode(path=path, text=path, is_mapped=True)
         self.toggle_node(self.root_node)
         self.add_node(self.root_node)
         for some_dir in self.filter_dir_gen(path):
             some_dir_path = some_dir.path
             if some_dir.is_file():
-                self.add_node(FileViewLabel(path=some_dir_path,
-                                            text=unicode(some_dir.name)))
+                some_dir_size = str(round(some_dir.stat()[6] / self.MB_CONST, 1))
+                self.add_node(FileNode(path=some_dir_path,
+                                       text=unicode(some_dir.name),
+                                       file_size=some_dir_size))
                 yield
             else:
-                folder = FolderViewLabel(path=some_dir_path, text=unicode(some_dir.name))
+                folder = FolderNode(path=some_dir_path, text=unicode(some_dir.name))
                 self.add_node(folder, self.root_node)
                 if self.empty_dir_check(some_dir_path):
-                    none_node = FileViewLabel(path="", text="")
+                    none_node = RootNode(path="", text="")
                     folder.is_mapped = False
                     self.add_node(none_node, folder)
                 yield
@@ -334,7 +355,7 @@ class DynamicTree(TreeView):
         """
         try:
             for filter_sub_dir in scandir.scandir(path):
-                if filter_sub_dir.is_dir() or re.match(self.FILE_EXT_RE,
+                if filter_sub_dir.is_dir() or re.match(self.FILE_FILTER,
                                                        filter_sub_dir.name):
                     yield filter_sub_dir
         except OSError:
@@ -364,8 +385,9 @@ class ConverterList(DynamicTree):
                           not sub_node.text == "Root"]
         self.node_path_list = [n_path.path for n_path in self.node_list]
         if input_node.path not in self.node_path_list:
-            self.add_node(FileViewLabel(path=input_node.path,
-                                        text=input_node.text))
+            self.add_node(FileNode(path=input_node.path,
+                                    text=input_node.text,
+                                   file_size=input_node.file_size))
         else:
             [self.remove_node(to_remove_node) for to_remove_node in
              self.node_list if to_remove_node.path == input_node.path]
@@ -374,18 +396,45 @@ class ConverterList(DynamicTree):
 class MetadorGui(App):
 
     def build(self):
+        iconfonts.register('default_font','fontawesome-webfont.ttf',
+                           'font-awesome.fontd')
         Window.bind(on_dropfile=self.drop_file_event)
+        Window.size = (900, 750)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+        self.icon = "icons\\music_cover.png"
         self.modal_config()
         self.dropdown_config()
-        self.root_layout = BoxLayout(orientation="vertical")
+        self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
-                                              spacing=15)
-        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=0.3)
+                                              spacing=20)
+        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.3)
+        self.bottom_layout = BottomLayout(orientation="vertical")
+        self.right_layout = RightLayout(orientation="vertical")
+        self.right_layout.add_widget(self.editor_carousel)
         self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
-        self.bottom_layout = BottomLayout()
+        self.tree_view_config()
+        self.app_menu_layout = AppMenuLayout()
+        self.tree_loading_stop()
+        self.scroll_layout = ScrollView()
+        self.scroll_layout.scroll_distance = 50
+        self.scroll_layout.add_widget(self.tree_view)
+        self.editor_carousel.add_widget(self.tag_editor)
+        self.editor_carousel.add_widget(self.converter_layout)
+        self.left_layout.add_widget(self.scroll_layout)
+        self.upper_layout.add_widget(self.left_layout)
+        self.upper_layout.add_widget(self.right_layout)
+        # self.root_layout.add_widget(self.app_menu_layout)
+        self.root_layout.add_widget(self.upper_layout)
+        # self.root_layout.add_widget(self.bottom_layout)
+
+        return self.root_layout
+
+    """WIDGETS CONFIG"""
+
+    def tree_view_config(self):
+        """Create and configure file explorer (Tree view)."""
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True,
                                      indent_level=12)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
@@ -393,36 +442,20 @@ class MetadorGui(App):
         self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
         self.tree_view.bind(on_folder_doubleclick=self.folder_doubleclick_handler)
         self.tree_view.bind(on_root_doubleclick=self.root_doubleclick_handler)
-        self.app_menu_layout = AppMenuLayout()
-        self.mapping_event("D:\The Music")
         self.tree_view.id = "tree_view_id"
-        self.tree_loading_stop()
-        self.scroll_layout = ScrollView()
-        self.scroll_layout.scroll_distance = 30
-        self.scroll_layout.add_widget(self.tree_view)
-        self.editor_carousel.add_widget(self.tag_editor)
-        self.editor_carousel.add_widget(self.converter_layout)
-        self.left_layout.add_widget(self.scroll_layout)
-        self.upper_layout.add_widget(self.left_layout)
-        self.upper_layout.add_widget(self.editor_carousel)
-        self.root_layout.add_widget(self.app_menu_layout)
-        self.root_layout.add_widget(self.upper_layout)
-        self.root_layout.add_widget(self.bottom_layout)
+        self.mapping_event("D:\The Music")
 
-        return self.root_layout
-
-    """WIDGETS CONFIG"""
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
         self.drag_modal = DragModal(pos_hint={"x": 0.05, "y": 0.45})
-        self.drag_modal.children[0].text = "Drag Here Your Destination Folder"
+        self.drag_modal.children[0].text = "Drag Here Your Music Folder"
         self.converter_modal = DragModal(pos_hint={"x": 0.6, "y": 0.5})
-        self.converter_modal.children[0].text = "Drag Here Your Output Folder"
+        self.converter_modal.children[0].text = "Drag Here Your Destination Folder"
         self.about_modal = AboutModal()
 
     def dropdown_config(self):
         """Create and configure all dropdown widgets, mainly  the app menu"""
-        self.about = AboutDropDown()
+        self.about_dropdown = AboutDropDown()
 
     """APP EVENTS"""
     def drop_file_event(self, window_instance, drop_file_string):
@@ -436,8 +469,7 @@ class MetadorGui(App):
                                         self.editor_carousel.index == 1 and \
                                         self.converter_modal.is_open:
 
-            self.converter_layout.ids.converter_output_text_input.text\
-                = drop_file_string
+            self.converter_layout.ids.converter_text_input.text = drop_file_string
             self.converter_modal.dismiss()
 
     def mapping_event(self, path_string):
@@ -463,26 +495,40 @@ class MetadorGui(App):
             # In case there's no existing file tree.
             return
 
+    """File Explorer Event Handlers"""
     def folder_doubleclick_handler(self, tree_instance, node):
         self.mapping_event(node.path)
 
     def file_doubleclick_handler(self, tree_instnace, node):
-        if self.editor_carousel.index == 0:
-            return
-        else:
+        if self.editor_carousel.index == 1:
             self.converter_layout.ids.converter_list.modify_list(node)
+        else:
+            return
 
     def root_doubleclick_handler(self, tree_instance, node):
         parent_path = os.path.split(node.path)[0]
         self.mapping_event(parent_path)
 
-    def change_editor_carousel(self):
-        if self.editor_carousel.index == 0:
-            self.editor_carousel.load_next()
-            self.bottom_layout.ids.editor_converter_button.text = "Tag Editor"
-        else:
-            self.editor_carousel.load_previous()
-            self.bottom_layout.ids.editor_converter_button.text = "Converter"
+    def change_editor_carousel(self, slide_num, slide_text):
+
+            self.editor_carousel.load_slide(self.editor_carousel.slides[slide_num])
+            self.right_layout.ids.chooser_label.text = slide_text
+
+    def change_editor_carousel_arrow(self, forward=True):
+        right_layout_header_dict = {0: "Tag Editor",
+                                    1: "File Converter"}
+        try:
+            if forward:
+                    self.right_layout.ids.chooser_label.text = right_layout_header_dict[
+                        self.editor_carousel.index + 1]
+                    self.editor_carousel.load_next()
+            else:
+                self.right_layout.ids.chooser_label.text = right_layout_header_dict[
+                    self.editor_carousel.index - 1]
+                self.editor_carousel.load_previous()
+        except KeyError:
+                pass
+
 
     def tree_loading_start(self):
         self.left_layout.ids.tree_progress.start_spinning()

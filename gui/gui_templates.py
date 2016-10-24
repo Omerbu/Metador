@@ -149,3 +149,25 @@ class DynamicTreeView(TreeView):
                 yield filter_sub_dir
 
 
+
+class FileLabel(Label):
+    file_icon = Image(source="icons\\file_icon.png",
+                      mipmap=True)
+
+class SimpleFileNode(FileLabel, TreeViewNode):
+    path = StringProperty("")
+    is_mapped = BooleanProperty(True)
+    node_type = StringProperty("File")
+    color_selected = [0, .4, .8, 1]
+
+    class FolderLabel(Label):
+        folder_icon = Image(source="icons\\grey_folder.png",
+                            mipmap=True)
+
+class SimpleFolderNode(FolderLabel, TreeViewNode):
+
+    path = StringProperty("")
+    is_mapped = BooleanProperty(True)
+    node_type = StringProperty("Folder")
+    color_selected = [.25, .25, .32, .5]
+    even_color = [.5, .5, .5, 0]

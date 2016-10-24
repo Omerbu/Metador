@@ -1,0 +1,81 @@
+#:kivy `1.0`
+
+
+<FilterDropdown>:
+
+  auto_dismiss: True
+    GridLayout:
+        size_hint_y: None
+        cols: 2
+        height:200
+        Label:
+            text: "MP3"
+        FilterCheckBox:
+            id: mp3_cbox
+        Label:
+            text: "FLAC"
+        FilterCheckBox:
+            id: flac_cbox
+        Label:
+            text: "ALAC"
+        FilterCheckBox:
+            id: alac_cbox
+        Label:
+            text: "OGG"
+        FilterCheckBox:
+            id: ogg_cbox
+        Label:
+            text: "WAV"
+        FilterCheckBox:
+            id: wav_cbox
+        RedButton:
+            text:"Clear"
+            bold:True
+        BlueButton:
+            bold:True
+            text: "Apply"
+            on_release: root.dismiss()
+
+
+
+<GreyButton>:
+        Line:
+            points:[self.pos[0], self.pos[1], self.pos[0]+self.width, self.pos[1],self.pos[0]+self.width, self.pos[1] + self.height,self.pos[0],self.pos[1]+self.height,self.pos[0],self.pos[1]]
+
+
+            points:[self.pos[0]+self.width -3, self.pos[1]+3,self.pos[0]+self.width -3, self.pos[1] + self.height -3,self.pos[0]+3,self.pos[1]+self.height-3,self.pos[0]+3,self.pos[1]+3]
+
+
+
+# Converter Spinner
+Spinner:
+            background_color:.30, .35, .42, 0
+            background_normal: ""
+            option_cls: "BlackSpinner"
+            text: "File Format"
+            bold: False
+            values: ("FLAC", "ALAC", "MP3", "OGG")
+            sync_height: True
+
+            <BlackSpinner@SpinnerOption>:
+    background_color:.3, .35, .42, 0
+    background_normal: ""
+    bold:False
+
+
+<RightLayout>:
+    spacing: 2
+    BoxLayout:
+        size_hint: 1, None
+        size:0,36
+        spacing: self.width / 9
+        TransparentButton:
+            text:"%s  Metador"%(icon.icon('fa-folder',16))
+            on_press:
+        TransparentButton:
+            text:"%s  Tag Editor"%(icon.icon('fa-refresh',16))
+            on_press:
+        TransparentButton:
+            text: "%s  Converter"%(icon.icon('fa-sliders',16))
+            on_release:
+    # SpacedHoLine:

@@ -14,8 +14,8 @@ class ColorButton(Button):
     """
     Button with a possibility to change the color on on_press (similar to background_down in normal Button widget)
     """
-    background_color_normal = ListProperty([0, 0.4, 0.8, 1])
-    background_color_down = ListProperty([0, 0.7, 1, 1])
+    background_color_normal = ListProperty([1, 1, 1, 1])
+    background_color_down = ListProperty([0, 1, 1, 1])
 
     def __init__(self, **kwargs):
         super(ColorButton, self).__init__(**kwargs)
@@ -30,28 +30,51 @@ class ColorButton(Button):
         self.background_color = self.background_color_normal
 
 
-class BlackButton(ColorButton):
-    background_color_normal = ListProperty([0, 0, 0, 1])
-    background_color_down = ListProperty([0, 0, 0, 1])
+class TransparentButton(Button):
+
+    line_color = ListProperty([.4, .42, .45, 0])
+    shade_color = ListProperty([0, 0, 0, 0])
+    back_color = ListProperty([0, 0, 0, 0])
+
+    def __init__(self, **kwargs):
+        super(TransparentButton, self).__init__(**kwargs)
+        self.background_normal = ""
+        self.background_down = ""
+        self.background_color = [1, 1, 1, 0]
+
+    def on_press(self):
+        self.line_color[3] = .2
+        self.shade_color[3] = .1
+        self.back_color[3] = .05
+
+    def on_release(self):
+        self.line_color[3] = 0
+        self.shade_color[3] = 0
+        self.back_color[3] = 0
+
+
+class GreyButton(ColorButton):
+    background_color_normal = ListProperty([.4, .42, .45, 1])
+    background_color_down = ListProperty([.12, .2, .25, 1])
 
 
 class BlueButton(ColorButton):
-    background_color_normal = ListProperty([0, 0.4, 0.8, 1])
-    background_color_down = ListProperty([0, 0.7, 1, 1])
+    background_color_normal = ListProperty([0, 0.33, 0.73, 1])
+    background_color_down = ListProperty([0, 0.5, 1, 1])
 
 
 class GreenButton(ColorButton):
-    background_color_normal = ListProperty([0, 0.6, 0.1, 1])
-    background_color_down = ListProperty([0, 1, 0, 1])
+    background_color_normal = ListProperty([0, 0.5, 0.1, 1])
+    background_color_down = ListProperty([0, .7, 0, 1])
 
 
 class RedButton(ColorButton):
-    background_color_normal= ListProperty([0.75, 0, 0, 1])
-    background_color_down= ListProperty([1, 0, 0, 2])
+    background_color_normal = ListProperty([0.55, .1, .1, 1])
+    background_color_down = ListProperty([1, 0, 0, 2])
 
 
 class AppMenuColor(ColorButton):
-    background_color_normal= ListProperty([0, 0, 0, 1])
+    background_color_normal = ListProperty([0, 0, 0, 0])
     background_color_down = ListProperty([0, 0.4, 0.8, 1])
 
 """Custom Widgets"""
@@ -108,7 +131,7 @@ class AppMenuHoverBehavior(HoverBehavior):
 
     def on_mouse_pos(self, *args):
         pos = args[1]
-        pos = (pos[0], pos[1]-530)
+        pos = (pos[0], pos[1]-525)
         inside = self.collide_point(*pos)
         if self.hovered == inside:
             # We have already done what was needed
