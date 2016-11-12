@@ -3,6 +3,7 @@ import re
 import os
 import os.path
 import scandir
+from tagging import EasyTagger
 from kivy.uix.spinner import Spinner
 from kivy.clock import Clock
 from kivy.config import Config
@@ -80,35 +81,38 @@ class TagEditorLayout(BoxLayout):
 
     """
 
-    TAGS_DICT = {}
-
     def __init__(self):
         super(TagEditorLayout, self).__init__()
-        self.input_list = [x for x in self.ids.keys() if "InputArtist" in x]
-        self.previous_input_dict = {"InputArtist": ""}
-        self.differentiated_input_dict = {}
+        self.input_list = [x for x in self.ids.keys() if "Input" in x]
+        self.previous_input_dict = {re.sub("Input", "", key): "" for key in self.input_list}
+        self.differentiated_input_dict = dict()
+        self.current_tags = self.previous_input_dict
 
     def print_text_input(self):
         """
         Future 'Apply Changes' method for writing tags to the selected
         music file.
 
+        Feature DOES NOT WORK PROPERLY!!!!
         """
         for input_text in self.input_list:
-            self.TAGS_DICT[input_text] = self.ids[input_text].text
-        self.differentiated_input_dict = {key: self.TAGS_DICT[key] for key in
-                                          self.TAGS_DICT if self.TAGS_DICT[key] !=
+            self.current_tags[re.sub("Input", "", input_text)] = self.ids[input_text].text
+        self.differentiated_input_dict = {key: self.current_tags[key] for key in
+                                          self.current_tags if self.current_tags[key] !=
                                           self.previous_input_dict[key]}
         print self.differentiated_input_dict
 
-    def input_text_change(self, tree, tree_node):
-        debug_dict = {"Artist": "{}".format(tree_node.path)}
-        self.previous_input_dict = {"InputArtist": "{}".format(tree_node.path)}
-        for input_text in self.input_list:
-            self.ids[input_text].text = debug_dict[
-                re.sub("Input", "", input_text)]
-            self.ids[input_text].cursor = (0, 0)    # Resets cursor position.
-            self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
+
+    def input_text_change(self, _, tree_node):
+        if tree_node.node_type == "File":
+            self.tagger = EasyTagger(tree_node.path)
+            tags_dict = self.tagger.get_tags()
+            self.previous_input_dict = tags_dict
+            for input_text in self.input_list:
+                self.ids[input_text].text = tags_dict[
+                    re.sub("Input", "", input_text)]
+                self.ids[input_text].cursor = (0, 0)    # Resets cursor position.
+                self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
 
 """Labels and Buttons:"""
@@ -135,12 +139,8 @@ class EditorTextInput(TextInput):
     def on_focus(self, _, enter_focus):
         if enter_focus:
             self.underline_color = [.5, 1, 1, 1]
-            self.canvas.clear()
-            print "Blue"
         else:
             self.underline_color = [1, 1, 1, .4]
-            print "White"
-
 
 
 class FileNode(BoxLayout, BorderLessNode):

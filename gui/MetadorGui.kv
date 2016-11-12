@@ -14,7 +14,7 @@
             size:self.size
 
 <Label>:
-    color:.9, .95, .95, 1
+    color:.9, .95, .95, .9
 
 <HoLine@FloatLayout>:
     size_hint:1,None
@@ -247,8 +247,7 @@
     foreground_color: .9,.9,.9,1
     canvas.after:
         Color:
-            rgba:
-            # rgba: self.underline_color
+            rgba: self.underline_color
         Line:
             points:[self.pos[0], self.pos[1], self.pos[0]+self.width, self.pos[1]]
             width:.25
