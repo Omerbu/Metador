@@ -15,7 +15,7 @@ class MP3Tagger(object):
         self.fname = filename
 
     def get_value(self, field):
-        return self.tags[field].text[0]
+        return unicode(self.tags[field].text[0])
 
     def edit_value(self, field, value):
         tag = globals().get(field)
@@ -35,9 +35,9 @@ class MP4Tagger(object):
 
     def get_value(self, field):
         if field == "trkn":
-            return self.tags[field][0][0]
+            return unicode(self.tags[field][0][0])
         else:
-            return self.tags[field][0]
+            return unicode(self.tags[field][0])
 
     def edit_value(self, field, value):
         if field == "trkn":
@@ -65,7 +65,7 @@ class APEv2Tagger(object):
         self.fname = filename
 
     def get_value(self, field):
-        return self.tags[field].value
+        return unicode(self.tags[field].value)
 
     def edit_value(self, field, value):
         self.tags[field] = value
@@ -82,7 +82,7 @@ class FlacTagger(object):
         self.fname = filename
 
     def get_value(self, field):
-        return self.tags[field][0]
+        return unicode(self.tags[field][0])
 
     def edit_value(self, field, value):
         self.tags[field] = [unicode(value)]
@@ -139,10 +139,17 @@ class EasyTagger(object):
     def get_value(self, field):
         field = field.title()
         if self.extension in ['.mp3', '.aiff']:
-            return self.tagger.get_value(EasyTagger.id3_trans(field))
-        if self.extension in ['.m4a']:
-            return self.tagger.get_value(EasyTagger.mp4_trans(field))
-        return self.tagger.get_value(field)
+            val = self.tagger.get_value(EasyTagger.id3_trans(field))
+        elif self.extension in ['.m4a']:
+            val = self.tagger.get_value(EasyTagger.mp4_trans(field))
+        else:
+            val = n self.tagger.get_value(field)
+        if field == "Tracknumber":
+            try:
+                val = re.search(r"\d+(?=\D|\Z)", val).group()
+            except AttributeError:
+                pass
+        return val
 
     def edit_value(self, field, value):
         field = field.title()
@@ -166,3 +173,6 @@ class EasyTagger(object):
         self.tagger.clear_tags()
         for key in tags_dict:
             self.edit_value(key, tags_dict[key])
+
+t = MP3Tagger("C:/Users/newma/Music/Camel/Camel/01-Slow Yourself Down.mp3")
+print t.get_value("TRCK")
