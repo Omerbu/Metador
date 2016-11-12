@@ -143,7 +143,7 @@ class EasyTagger(object):
         elif self.extension in ['.m4a']:
             val = self.tagger.get_value(EasyTagger.mp4_trans(field))
         else:
-            val = n self.tagger.get_value(field)
+            val = self.tagger.get_value(field)
         if field == "Tracknumber":
             try:
                 val = re.search(r"\d+(?=\D|\Z)", val).group()
@@ -174,5 +174,3 @@ class EasyTagger(object):
         for key in tags_dict:
             self.edit_value(key, tags_dict[key])
 
-t = MP3Tagger("C:/Users/newma/Music/Camel/Camel/01-Slow Yourself Down.mp3")
-print t.get_value("TRCK")
