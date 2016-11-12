@@ -1,10 +1,11 @@
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout,GridLayoutException
 from kivy.uix.scrollview import ScrollView
 from kivy.properties import BooleanProperty, ObjectProperty, \
-                            ListProperty, StringProperty,NumericProperty
+                            ListProperty, StringProperty, NumericProperty
 from kivy.core.window import Window
 from kivy.uix.button import Button
+from kivy.uix.treeview import TreeViewNode
+from kivy.uix.togglebutton import ToggleButtonBehavior
 
 
 """Color Buttons"""
@@ -30,6 +31,15 @@ class ColorButton(Button):
         self.background_color = self.background_color_normal
 
 
+class SimpleTransparentButton(Button):
+
+    def __init__(self, **kwargs):
+        super(SimpleTransparentButton, self).__init__(**kwargs)
+        self.background_normal = ""
+        self.background_down = ""
+        self.background_color = [1, 1, 1, 0]
+
+
 class TransparentButton(Button):
 
     line_color = ListProperty([.4, .42, .45, 0])
@@ -42,40 +52,26 @@ class TransparentButton(Button):
         self.background_down = ""
         self.background_color = [1, 1, 1, 0]
 
-    def on_press(self):
-        self.line_color[3] = .2
-        self.shade_color[3] = .1
-        self.back_color[3] = .05
-
-    def on_release(self):
-        self.line_color[3] = 0
-        self.shade_color[3] = 0
-        self.back_color[3] = 0
-
-
-class GreyButton(ColorButton):
-    background_color_normal = ListProperty([.4, .42, .45, 1])
-    background_color_down = ListProperty([.12, .2, .25, 1])
+    def on_state(self, _, new_state):
+        if new_state == 'down':
+            self.line_color[3] = .2
+            self.shade_color[3] = .05
+            self.back_color[3] = .08
+            self.color = [.6, .75, .75, 1]
+        else:
+            self.line_color[3] = 0
+            self.shade_color[3] = 0
+            self.back_color[3] = 0
+            self.color = 1, 1, 1, 1
 
 
-class BlueButton(ColorButton):
-    background_color_normal = ListProperty([0, 0.33, 0.73, 1])
-    background_color_down = ListProperty([0, 0.5, 1, 1])
+class ToggleTransparentButton(ToggleButtonBehavior, TransparentButton):
 
+    def on_touch_down(self, touch):
+        if self.state == "down":
+            return 
+        super(ToggleTransparentButton, self).on_touch_down(touch)
 
-class GreenButton(ColorButton):
-    background_color_normal = ListProperty([0, 0.5, 0.1, 1])
-    background_color_down = ListProperty([0, .7, 0, 1])
-
-
-class RedButton(ColorButton):
-    background_color_normal = ListProperty([0.55, .1, .1, 1])
-    background_color_down = ListProperty([1, 0, 0, 2])
-
-
-class AppMenuColor(ColorButton):
-    background_color_normal = ListProperty([0, 0, 0, 0])
-    background_color_down = ListProperty([0, 0.4, 0.8, 1])
 
 """Custom Widgets"""
 
@@ -244,3 +240,7 @@ class AnimatedBoxLayout(BoxLayout):
                 c.width = int(w)
                 c.height = int(h)
                 y += h + spacing
+
+
+class BorderLessNode(TreeViewNode):
+    """Tree View Node without annoying borders"""

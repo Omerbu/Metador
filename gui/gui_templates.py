@@ -171,3 +171,33 @@ class SimpleFolderNode(FolderLabel, TreeViewNode):
     node_type = StringProperty("Folder")
     color_selected = [.25, .25, .32, .5]
     even_color = [.5, .5, .5, 0]
+
+class AppMenuButton(TransparentButton):
+    pass
+    # Currently Having Performance Issues:
+
+    # def on_enter(self):
+    #     self.background_color = self.background_color_down
+    #
+    # def on_leave(self):
+    #     self.background_color = self.background_color_normal
+
+class AboutDropDown(DropDown, HoverBehavior):
+
+    def __init__(self, *args, **kwargs):
+        super(AboutDropDown, self).__init__(*args, **kwargs)
+        self.is_open = BooleanProperty(False)
+
+    def open(self, widget):
+        super(AboutDropDown, self).open(widget)
+        self.is_open = True
+
+    def on_dismiss(self):
+        self.is_open = False
+
+    def on_leave(self):
+        if self.attach_to:
+            if self.attach_to.collide_point(Window.mouse_pos[0],
+                                         Window.mouse_pos[1]):
+                return
+        self.dismiss()

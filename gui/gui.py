@@ -4,7 +4,6 @@ import os
 import os.path
 import scandir
 from kivy.uix.spinner import Spinner
-from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
@@ -21,7 +20,7 @@ from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.uix.checkbox import CheckBox
 from kivy.graphics import Rectangle
-from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
+from kivy.properties import StringProperty, BooleanProperty,ListProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
@@ -29,7 +28,7 @@ from kivy.garden.progressspiner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
 from gui_classes import AnimatedBoxLayout, HoverBehavior,\
-                        AppMenuColor, TransparentButton
+                         TransparentButton, BorderLessNode, ToggleTransparentButton
 from kivy.garden.iconfonts import iconfonts
 
 """Config """
@@ -51,6 +50,10 @@ class AppMenuLayout(BoxLayout):
     pass
 
 
+class MetadorLayout(BoxLayout):
+    pass
+
+
 class ConverterLayout(BoxLayout):
     """Layout that hosts the file converter widgets"""
 
@@ -63,7 +66,7 @@ class LeftLayout(BoxLayout):
     pass
 
 
-class RightLayout(AnimatedBoxLayout):
+class CenterLayout(AnimatedBoxLayout):
     pass
 
 
@@ -111,11 +114,36 @@ class TagEditorLayout(BoxLayout):
 """Labels and Buttons:"""
 
 
+class AlbumLabel(Label):
+        icon_src = Image(source="icons\\cd.png",
+                         mipmap=True)
+
+
+class GenreLabel(Label):
+        icon_src = Image(source="icons\\electric_guitar.png",
+                         mipmap=True)
+
+
 class EditorLabel(Label):
-    """Label Class for editor text input headers."""
+    """Label Class for editor text input icons."""
 
 
-class FileNode(BoxLayout, TreeViewNode):
+class EditorTextInput(TextInput):
+
+    underline_color = ListProperty([1, 1, 1, .4])
+
+    def on_focus(self, _, enter_focus):
+        if enter_focus:
+            self.underline_color = [.5, 1, 1, 1]
+            self.canvas.clear()
+            print "Blue"
+        else:
+            self.underline_color = [1, 1, 1, .4]
+            print "White"
+
+
+
+class FileNode(BoxLayout, BorderLessNode):
     file_icon = Image(source="icons\\file_icon_white.png",
                       mipmap=True)
     file_size = StringProperty("")
@@ -124,11 +152,11 @@ class FileNode(BoxLayout, TreeViewNode):
     node_type = StringProperty("File")
     text = StringProperty("")
     shorten = BooleanProperty(True)
-    color_selected = [.22, .25, .35, .45]
+    color_selected = [.0, .0, .0, .07]
     even_color = [.5, .5, .5, 0]
 
 
-class FolderNode(BoxLayout, TreeViewNode):
+class FolderNode(BoxLayout, BorderLessNode):
     file_icon = Image(source="icons\\grey_folder.png",
                       mipmap=True)
     path = StringProperty("")
@@ -136,79 +164,29 @@ class FolderNode(BoxLayout, TreeViewNode):
     node_type = StringProperty("Folder")
     text = StringProperty("")
     shorten = BooleanProperty(True)
-    color_selected = [.22, .25, .35, .45]
-    even_color = [.5, .5, .5, 0]
+    color_selected = [.0, .0, .0, .07]
+    even_color = [.2, .2, .2, 0]
 
 
-class RootNode(TreeViewLabel):
+class RootNode(Label, TreeViewNode):
 
     path = StringProperty("")
     is_mapped = BooleanProperty(False)
     node_type = StringProperty("Root")
-    color_selected = [.22, .25, .35, .45]
+    color_selected = [.0, .0, .0, .07]
+    no_selection = True
 
 
 class CoverArtImage(ButtonBehavior, Image):
     def __init__(self, **kwargs):
         super(CoverArtImage, self).__init__(**kwargs)
         self.source = "icons\\cover_art.jpg"
+        self.mipmap = False
 
 """APP MENU ELEMENTS:"""
 
 
-class AppMenuButton(TransparentButton):
-    pass
-    # Currently Having Performance Issues:
-
-    # def on_enter(self):
-    #     self.background_color = self.background_color_down
-    #
-    # def on_leave(self):
-    #     self.background_color = self.background_color_normal
-
-
-class DropDownRootButton(AppMenuColor, HoverBehavior):
-    dropdown_object = ObjectProperty("")
-
-    def leave_handler(self):
-        if self.dropdown_object.collide_point(Window.mouse_pos[0],
-                                       Window.mouse_pos[1]):
-            return
-        self.dropdown_object.dismiss()
-
-    def on_release(self):
-        self.dropdown_object.open(self) if not self.dropdown_object.is_open \
-           else None
-
-    def on_enter(self):
-        self.background_color = self.background_color_down
-
-    def on_leave(self):
-        self.background_color = self.background_color_normal
-
-
-class AboutDropDown(DropDown, HoverBehavior):
-
-    def __init__(self, *args, **kwargs):
-        super(AboutDropDown, self).__init__(*args, **kwargs)
-        self.is_open = BooleanProperty(False)
-
-    def open(self, widget):
-        super(AboutDropDown, self).open(widget)
-        self.is_open = True
-
-    def on_dismiss(self):
-        self.is_open = False
-
-    def on_leave(self):
-        if self.attach_to:
-            if self.attach_to.collide_point(Window.mouse_pos[0],
-                                         Window.mouse_pos[1]):
-                return
-        self.dismiss()
-
 """COMPLEX GUI OBJECTS:"""
-
 
 
 class BaseModal(ModalView):
@@ -396,36 +374,36 @@ class ConverterList(DynamicTree):
 class MetadorGui(App):
 
     def build(self):
-        iconfonts.register('default_font','fontawesome-webfont.ttf',
+        iconfonts.register('default_font', 'fontawesome-webfont.ttf',
                            'font-awesome.fontd')
-        Window.bind(on_dropfile=self.drop_file_event)
-        Window.size = (900, 750)
+        Window.bind(on_dropfile=self.drop_file_event_handler)
+        Window.size = (1300, 850)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.icon = "icons\\music_cover.png"
         self.modal_config()
-        self.dropdown_config()
         self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
-                                              spacing=20)
+                                              spacing=50, padding=[25, 0, 25, 0])
         self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.3)
         self.bottom_layout = BottomLayout(orientation="vertical")
-        self.right_layout = RightLayout(orientation="vertical")
-        self.right_layout.add_widget(self.editor_carousel)
+        self.center_layout = CenterLayout(orientation="vertical")
+        self.app_menu_layout = AppMenuLayout()
+        self.center_layout.add_widget(self.editor_carousel)
+        self.metador_layout = MetadorLayout()
         self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
         self.tree_view_config()
-        self.app_menu_layout = AppMenuLayout()
-        self.tree_loading_stop()
-        self.scroll_layout = ScrollView()
+        self.scroll_layout = ScrollView(bar_color=[.4, .6, .65, .35])
         self.scroll_layout.scroll_distance = 50
         self.scroll_layout.add_widget(self.tree_view)
-        self.editor_carousel.add_widget(self.tag_editor)
+        self.editor_carousel.add_widget(self.metador_layout)
         self.editor_carousel.add_widget(self.converter_layout)
         self.left_layout.add_widget(self.scroll_layout)
         self.upper_layout.add_widget(self.left_layout)
-        self.upper_layout.add_widget(self.right_layout)
-        # self.root_layout.add_widget(self.app_menu_layout)
+        self.upper_layout.add_widget(self.center_layout)
+        self.upper_layout.add_widget(self.tag_editor)
+        self.root_layout.add_widget(self.app_menu_layout)
         self.root_layout.add_widget(self.upper_layout)
         # self.root_layout.add_widget(self.bottom_layout)
 
@@ -453,12 +431,8 @@ class MetadorGui(App):
         self.converter_modal.children[0].text = "Drag Here Your Destination Folder"
         self.about_modal = AboutModal()
 
-    def dropdown_config(self):
-        """Create and configure all dropdown widgets, mainly  the app menu"""
-        self.about_dropdown = AboutDropDown()
-
     """APP EVENTS"""
-    def drop_file_event(self, window_instance, drop_file_string):
+    def drop_file_event_handler(self, window_instance, drop_file_string):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
                                         window_instance.mouse_pos[1]):
@@ -466,7 +440,7 @@ class MetadorGui(App):
             self.mapping_event(drop_file_string)
         elif self.editor_carousel.collide_point(window_instance.mouse_pos[0],
                                          window_instance.mouse_pos[1]) and \
-                                        self.editor_carousel.index == 1 and \
+                                        self.editor_carousel.index == 2 and \
                                         self.converter_modal.is_open:
 
             self.converter_layout.ids.converter_text_input.text = drop_file_string
@@ -480,6 +454,7 @@ class MetadorGui(App):
             except StopIteration:
                 self.mapping_schedule.cancel()
                 self.tree_loading_stop()
+
         if not os.path.isdir(path_string):
             return
         self.tree_loading_start()
@@ -509,32 +484,15 @@ class MetadorGui(App):
         parent_path = os.path.split(node.path)[0]
         self.mapping_event(parent_path)
 
-    def change_editor_carousel(self, slide_num, slide_text):
+    def change_editor_carousel(self, slide_num):
 
             self.editor_carousel.load_slide(self.editor_carousel.slides[slide_num])
-            self.right_layout.ids.chooser_label.text = slide_text
-
-    def change_editor_carousel_arrow(self, forward=True):
-        right_layout_header_dict = {0: "Tag Editor",
-                                    1: "File Converter"}
-        try:
-            if forward:
-                    self.right_layout.ids.chooser_label.text = right_layout_header_dict[
-                        self.editor_carousel.index + 1]
-                    self.editor_carousel.load_next()
-            else:
-                self.right_layout.ids.chooser_label.text = right_layout_header_dict[
-                    self.editor_carousel.index - 1]
-                self.editor_carousel.load_previous()
-        except KeyError:
-                pass
-
 
     def tree_loading_start(self):
-        self.left_layout.ids.tree_progress.start_spinning()
+        self.app_menu_layout.ids.tree_progress.start_spinning()
 
     def tree_loading_stop(self):
-        self.left_layout.ids.tree_progress.stop_spinning()
+        self.app_menu_layout.ids.tree_progress.stop_spinning()
 
 if __name__ == '__main__':
     MetadorGui().run()
