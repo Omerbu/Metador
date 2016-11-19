@@ -115,8 +115,11 @@ class EasyTagger(object):
         # choose appropriate tagger for this file type.
         try:
             self.tagger = self.TAGGERS[self.extension](filename)
+            # CR -  Bad Naming - format_specific_tagger or Specific_tagger would be better.
         except KeyError:
             raise MetadorTaggerError("unsupported file type")
+
+    # CR - This is an object wrapping a file that contains data, use  __iter__ , __setattr__ and __getatrr__.
 
     @staticmethod
     def id3_trans(field):
@@ -152,6 +155,7 @@ class EasyTagger(object):
         return val
 
     def edit_value(self, field, value):
+        # CR- Bad Naming - doesn't describe the action of this method.
         field = field.title()
         if self.extension in ['.mp3', '.aiff']:
             self.tagger.edit_value(EasyTagger.id3_trans(field), value)

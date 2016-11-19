@@ -73,8 +73,18 @@
             direction: "bottom"
             scroll_distance:100000000
             scroll_timeout: 10
-            anim_move_duration:.6
+            anim_move_duration:.3
             id: filter_carousel
+            BoxLayout:
+                spacing: self.width / 9
+                FlatButton:
+                    text: "%s  Back"%(icon.icon('fa-arrow-left',16,"5c7f8a"))
+                    on_press: app.tree_view.is_multiple_selection = False
+                FlatButton:
+                    text: "%s  Something"%(icon.icon('fa-hourglass',16,"5c7f8a"))
+                FlatButton:
+                    text: "%s  Add"%(icon.icon('fa-arrow-right',16,"5c7f8a"))
+                    on_press: print len(app.tree_view.selected_nodes)
             BoxLayout:
                 spacing: self.width / 9
                 FlatButton:
@@ -85,7 +95,7 @@
                     on_press: app.tree_refresh()
                 FlatButton:
                     text: "%s  Filter"%(icon.icon('fa-filter',16,"5c7f8a"))
-                    on_release: filter_carousel.load_next()
+                    on_release: app.change_carousel(filter_carousel,2)
 
             BoxLayout:
                 GridLayout:
@@ -113,7 +123,7 @@
                     size_hint: 0.2,1
                     text: "Filter"
                     on_press:
-                    on_release: filter_carousel.load_previous()
+                    on_release: app.change_carousel(filter_carousel,1)
     SpacedHoLine:
 
 <CenterLayout>:
@@ -127,11 +137,11 @@
             spacing: self.width / 10
             ToggleFlatButton:
                 text: "Metador"
-                on_press:app.change_editor_carousel(0)
+                on_press:app.change_carousel(app.editor_carousel, 0)
                 group: "Converter"
             ToggleFlatButton:
                 text: "File Converter"
-                on_press:app.change_editor_carousel(1)
+                on_press:app.change_carousel(app.editor_carousel, 1)
                 group: "Converter"
 
 

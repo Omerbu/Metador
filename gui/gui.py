@@ -3,12 +3,11 @@ import re
 import os
 import os.path
 import scandir
+from functools import partial
 from tagging import EasyTagger
-from kivy.uix.spinner import Spinner
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.uix.modalview import ModalView
-from kivy.uix.dropdown import DropDown
 from kivy.app import App
 from kivy.uix.carousel import Carousel
 from kivy.uix.boxlayout import BoxLayout
@@ -32,6 +31,7 @@ from gui_classes import AnimatedBoxLayout, HoverBehavior,\
                          BorderLessNode, ToggleFlatButton,\
                         FlatButton
 from kivy.garden.iconfonts import iconfonts
+from meta_utils import time_decorator
 
 """Config """
 Config.set('kivy', 'desktop', '1')
@@ -219,6 +219,12 @@ class DynamicTree(TreeView):
 
     FILE_FILTER = ".*\.(flac|mp3|m4a|m4p|wma|aiff|wv|mpc)$"
     MB_CONST = float(1048576)
+    is_multiple_selection = BooleanProperty(False)
+    selected_nodes = ListProperty(list())
+
+    def __init__(self, *args, **kwargs):
+        super(DynamicTree, self).__init__(*args, **kwargs)
+        self.ms_event = None
 
     def on_touch_down(self, touch):
         node = self.get_node_at_pos(touch.pos)
@@ -239,15 +245,40 @@ class DynamicTree(TreeView):
                     self.dispatch("on_folder_doubleclick", node)
             else:
                 self.select_node(node)
-                node.dispatch('on_touch_down', touch)
+        node.dispatch('on_touch_down', touch)
         return True
+
+    def enable_multiple_selection(self, _):
+        self.is_multiple_selection = True
+
+    def ms_clock_on(self, _, touch,):
+        self.ms_event = Clock.schedule_once(self.enable_multiple_selection, 1)
+
+    def ms_clock_off(self, _, touch,):
+        if self.ms_event:
+            Clock.unschedule(self.ms_event)
 
     def select_node(self, node):
         if self.selected_node:
             self.deselected_node = self.selected_node
         else:
             self.deselected_node = None
-        super(DynamicTree, self).select_node(node)
+        if node.no_selection:
+            return
+        if self.is_multiple_selection:
+            if node in self.selected_nodes:
+                node.is_selected = False
+                self.selected_nodes.remove(node)
+                if not self.selected_nodes:
+                    self.is_multiple_selection = False
+            else:
+                node.is_selected = True
+                self.selected_nodes.append(node)
+        else:
+            if self._selected_node:
+                self._selected_node.is_selected = False
+            node.is_selected = True
+            self._selected_node = node
         self.dispatch("on_select", node)
 
     def on_node_expand(self, node):
@@ -292,6 +323,7 @@ class DynamicTree(TreeView):
 
     def populate_tree_view(self, path):
         """Only triggered at file tree initialization."""
+        self.selected_nodes = list()
         path = unicode(path)
         self.root_node = RootNode(path=path, text=path, is_mapped=True)
         self.toggle_node(self.root_node)
@@ -387,7 +419,7 @@ class MetadorGui(App):
         self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
                                               spacing=50, padding=[25, 0, 25, 0])
-        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.3)
+        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.6)
         self.bottom_layout = BottomLayout(orientation="vertical")
         self.center_layout = CenterLayout(orientation="vertical")
         self.app_menu_layout = AppMenuLayout()
@@ -418,6 +450,9 @@ class MetadorGui(App):
         """Create and configure file explorer (Tree view)."""
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True,
                                      indent_level=12)
+        self.tree_view.bind(on_select=self.tree_view.ms_clock_on)
+        self.tree_view.bind(on_touch_up=self.tree_view.ms_clock_off)
+        self.tree_view.bind(is_multiple_selection=self.multiple_selection_handler)
         self.tree_view.bind(on_select=self.tag_editor.input_text_change)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
@@ -425,6 +460,7 @@ class MetadorGui(App):
         self.tree_view.bind(on_root_doubleclick=self.root_doubleclick_handler)
         self.tree_view.id = "tree_view_id"
         self.mapping_event("D:\The Music")
+        self.left_layout.ids.filter_carousel.index = 1
 
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
@@ -448,6 +484,12 @@ class MetadorGui(App):
 
             self.converter_layout.ids.converter_text_input.text = drop_file_string
             self.converter_modal.dismiss()
+
+    @staticmethod
+    def change_carousel(carousel, slide_num):
+        carousel.load_slide(carousel.slides[slide_num])
+
+    """File Explorer Event Handlers"""
 
     def mapping_event(self, path_string):
 
@@ -473,7 +515,18 @@ class MetadorGui(App):
             # In case there's no existing file tree.
             return
 
-    """File Explorer Event Handlers"""
+    def multiple_selection_handler(self, _, ms_value):
+        filter_carousel = self.left_layout.ids.filter_carousel
+        if ms_value:
+            self.change_carousel(filter_carousel, 0)
+            self.tree_view.selected_nodes.append(self.tree_view.selected_node)
+
+        else:
+            self.change_carousel(filter_carousel, 1)
+            for node in self.tree_view.selected_nodes:  # Clear all selected nodes.
+                node.is_selected = False
+            self.tree_view.selected_nodes = list()
+
     def folder_doubleclick_handler(self, tree_instance, node):
         self.mapping_event(node.path)
 
@@ -487,9 +540,6 @@ class MetadorGui(App):
         parent_path = os.path.split(node.path)[0]
         self.mapping_event(parent_path)
 
-    def change_editor_carousel(self, slide_num):
-
-            self.editor_carousel.load_slide(self.editor_carousel.slides[slide_num])
 
     def tree_loading_start(self):
         self.app_menu_layout.ids.tree_progress.start_spinning()
