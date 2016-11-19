@@ -34,7 +34,7 @@
         Color:
             rgba:[.4, .6, .65, .35]
         Rectangle:
-            size:(self.size[0],self.size[1]-15)
+            size:(self.size[0],2)
             pos: self.pos[0] ,self.pos[1] + self.height / 2 -2
 
 
@@ -46,23 +46,17 @@
     size_hint: 1,None
     height: 30
 
-<TransparentButton>:
+
+
+<FlatButton>:
     canvas:
         Color:
-            rgba:self.line_color
-        Line:
-            points:[self.pos[0], self.pos[1], self.pos[0]+self.width, self.pos[1],self.pos[0]+self.width, self.pos[1] + self.height,self.pos[0],self.pos[1]+self.height,self.pos[0],self.pos[1]]
-        Color:
-            rgba:self.shade_color
-        Line:
-            points:[self.pos[0]+self.width -3, self.pos[1]+3,self.pos[0]+self.width -3, self.pos[1] + self.height -3,self.pos[0]+3,self.pos[1]+self.height-3,self.pos[0]+3,self.pos[1]+3]
-            width:1
-        Color:
-            rgba: self.back_color
+            rgba:self.underline_color
         Rectangle:
-            pos:self.pos
-            size:self.size
-    markup:True
+            size: self.size[0]  , 1
+            pos:self.pos[0], self.pos[1]
+            # points: [self.pos[0]+self.width * .2  , self.pos[1], self.pos[0]+self.width * .8 ,self.pos[1]]
+            # width: 1
 
 <FilterCheckBox@CheckBox>:
     active: True
@@ -78,18 +72,18 @@
         Carousel:
             direction: "bottom"
             scroll_distance:100000000
-            scroll_timeout:-1
+            scroll_timeout: 10
             anim_move_duration:.6
             id: filter_carousel
             BoxLayout:
                 spacing: self.width / 9
-                TransparentButton:
+                FlatButton:
                     text:"%s  Change"%(icon.icon('fa-folder',16,"5c7f8a"))
                     on_press: app.drag_modal.open()
-                TransparentButton:
+                FlatButton:
                     text:"%s  Refresh"%(icon.icon('fa-refresh',16,"5c7f8a"))
                     on_press: app.tree_refresh()
-                TransparentButton:
+                FlatButton:
                     text: "%s  Filter"%(icon.icon('fa-filter',16,"5c7f8a"))
                     on_release: filter_carousel.load_next()
 
@@ -115,7 +109,7 @@
                     FilterCheckBox:
                     FilterCheckBox:
                     FilterCheckBox:
-                TransparentButton:
+                FlatButton:
                     size_hint: 0.2,1
                     text: "Filter"
                     on_press:
@@ -129,12 +123,13 @@
         size_hint:1,None
         height: 35
         BoxLayout:
-            spacing: self.width / 12
-            ToggleTransparentButton:
+            padding:30,0,30,0
+            spacing: self.width / 10
+            ToggleFlatButton:
                 text: "Metador"
                 on_press:app.change_editor_carousel(0)
                 group: "Converter"
-            ToggleTransparentButton:
+            ToggleFlatButton:
                 text: "File Converter"
                 on_press:app.change_editor_carousel(1)
                 group: "Converter"
@@ -176,7 +171,7 @@
         size_hint: None,1
         width: self.texture_size[0]
         text: "{} MB".format(root.file_size)
-    TransparentButton:
+    SimpleTransparentButton:
         size_hint: None,1
         width: 20
         text: "%s"%(icon.icon("fa-plus",16,"5c7f8a"))
@@ -248,9 +243,9 @@
     canvas.after:
         Color:
             rgba: self.underline_color
-        Line:
-            points:[self.pos[0], self.pos[1], self.pos[0]+self.width, self.pos[1]]
-            width:.25
+        Rectangle:
+            size: self.size[0], .75
+            pos:self.pos
 
 
 <TagEditorLayout>:
@@ -344,13 +339,13 @@
         size_hint: 1,None
         size: 0,36
         orientation: "horizontal"
-        TransparentButton:
+        FlatButton:
             text: "%s  Rename"%(icon.icon("fa-pencil",16,"5c7f8a"))
             on_press:
-        TransparentButton:
+        FlatButton:
             text: "%s  Auto-Tag"%(icon.icon("fa-tag",16,"5c7f8a"))
             on_press: print self.size
-        TransparentButton:
+        FlatButton:
             text: "%s  Save"%(icon.icon("fa-floppy-o",16,"5c7f8a"))
             on_press: root.print_text_input()
             markup: True
@@ -374,6 +369,7 @@
         Carousel:
             direction: "bottom"
             scroll_distance:100000000
+            scroll_timeout: 10000
             id: converter_carousel
             BoxLayout:
                 on_touch_down: converter_carousel.load_next()
@@ -428,7 +424,7 @@
         EditorTextInput:
             id: converter_text_input
             hint_text: "Destination Folder"
-        TransparentButton:
+        FlatButton:
             size_hint: 0.1,0.98
             markup: True
             text: "%s"%(icon.icon('fa-folder',16,"5c7f8a"))
@@ -440,12 +436,12 @@
         spacing: self.width / 10
         size_hint: 1,None
         size: 0,36
-        TransparentButton:
+        FlatButton:
             text: "%s  Clear"%(icon.icon("fa-remove",16,"5c7f8a"))
             on_press: converter_list.clear_tree_view()
-        TransparentButton:
+        FlatButton:
             text: "%s  Bitrate"%(icon.icon("fa-bar-chart",16,"5c7f8a"))
-        TransparentButton:
+        FlatButton:
             text: "%s  Convert"%(icon.icon("fa-check",16,"5c7f8a"))
 
 <MetadorLayout>:
@@ -460,13 +456,13 @@
         size_hint: 1,None
         size: 0,36
         orientation: "horizontal"
-        TransparentButton:
+        FlatButton:
             text: "%s  Clear"%(icon.icon("fa-times",16,"5c7f8a"))
             on_press:
-        TransparentButton:
+        FlatButton:
             text: "%s  Metador!"%(icon.icon("fa-music",16,"5c7f8a"))
             markup: True
-        TransparentButton:
+        FlatButton:
             text: "%s  Settings"%(icon.icon("fa-cogs",16,"5c7f8a"))
 
 <DragModal>:
@@ -487,12 +483,12 @@
     size: 0,40
     canvas:
         Color:
-            rgba: [.1,.2,.2,.35]
+            rgba: [.1,.2,.2,.4]
         Rectangle:
             pos:self.pos
             size:self.size
-    TransparentButton:
-        text: "%s"%(icon.icon('fa-bars',17,"5c7f8a"))
+    FlatButton:
+        text: "%s"%(icon.icon('fa-bars',20,"5c7f8a"))
         size_hint:.05,1
     Label:
         text: "Metador"

@@ -25,11 +25,12 @@ from kivy.properties import StringProperty, BooleanProperty,ListProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.graphics.texture import Texture
-from kivy.garden.progressspiner import ProgressSpinner
+from kivy.garden.progressspinner import ProgressSpinner
 from kivy.core.window import Window
 from kivy.core.image import ImageData
 from gui_classes import AnimatedBoxLayout, HoverBehavior,\
-                         TransparentButton, BorderLessNode, ToggleTransparentButton
+                         BorderLessNode, ToggleFlatButton,\
+                        FlatButton
 from kivy.garden.iconfonts import iconfonts
 
 """Config """
@@ -101,7 +102,9 @@ class TagEditorLayout(BoxLayout):
                                           self.current_tags if self.current_tags[key] !=
                                           self.previous_input_dict[key]}
         print self.differentiated_input_dict
-
+        print self.previous_input_dict
+        self.previous_input_dict = self.current_tags
+        print self. current_tags
 
     def input_text_change(self, _, tree_node):
         if tree_node.node_type == "File":
@@ -138,7 +141,7 @@ class EditorTextInput(TextInput):
 
     def on_focus(self, _, enter_focus):
         if enter_focus:
-            self.underline_color = [.5, 1, 1, 1]
+            self.underline_color = [0, 1, 1, 1]
         else:
             self.underline_color = [1, 1, 1, .4]
 

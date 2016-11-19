@@ -11,33 +11,25 @@ from kivy.uix.togglebutton import ToggleButtonBehavior
 """Color Buttons"""
 
 
-class ColorButton(Button):
-    """
-    Button with a possibility to change the color on on_press (similar to background_down in normal Button widget)
-    """
-    background_color_normal = ListProperty([1, 1, 1, 1])
-    background_color_down = ListProperty([0, 1, 1, 1])
-
-    def __init__(self, **kwargs):
-        super(ColorButton, self).__init__(**kwargs)
-        self.background_normal = ""
-        self.background_down = ""
-        self.background_color = self.background_color_normal
-
-    def on_press(self):
-        self.background_color = self.background_color_down
-
-    def on_release(self):
-        self.background_color = self.background_color_normal
-
-
 class SimpleTransparentButton(Button):
 
     def __init__(self, **kwargs):
         super(SimpleTransparentButton, self).__init__(**kwargs)
+        self.markup = True
         self.background_normal = ""
         self.background_down = ""
         self.background_color = [1, 1, 1, 0]
+
+
+class FlatButton(SimpleTransparentButton):
+
+    underline_color = ListProperty([1, 1, 1, 0])
+
+    def on_state(self, _, new_state):
+        if new_state == 'down':
+            self.underline_color = [0, 1, 1, 1]
+        else:
+            self.underline_color = [1, 1, 1, 0]
 
 
 class TransparentButton(Button):
@@ -57,7 +49,7 @@ class TransparentButton(Button):
             self.line_color[3] = .2
             self.shade_color[3] = .05
             self.back_color[3] = .08
-            self.color = [.6, .75, .75, 1]
+            self.color = [.6, 1, 1, 1]
         else:
             self.line_color[3] = 0
             self.shade_color[3] = 0
@@ -65,12 +57,12 @@ class TransparentButton(Button):
             self.color = 1, 1, 1, 1
 
 
-class ToggleTransparentButton(ToggleButtonBehavior, TransparentButton):
+class ToggleFlatButton(ToggleButtonBehavior, FlatButton):
 
     def on_touch_down(self, touch):
         if self.state == "down":
             return 
-        super(ToggleTransparentButton, self).on_touch_down(touch)
+        super(ToggleFlatButton, self).on_touch_down(touch)
 
 
 """Custom Widgets"""
