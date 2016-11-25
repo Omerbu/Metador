@@ -114,11 +114,17 @@
                     Label:
                         text: "MP3"
                     FilterCheckBox:
+                        id: flac_ch
                     FilterCheckBox:
+                        id: m4a_ch
                     FilterCheckBox:
+                        id: flac_ch
                     FilterCheckBox:
+                        id: wma_ch
                     FilterCheckBox:
+                        id: aiff_ch
                     FilterCheckBox:
+                        id: mp3_ch
                 FlatButton:
                     size_hint: 0.2,1
                     text: "Filter"
@@ -146,6 +152,12 @@
 
 
 <BorderLessNode>:
+    canvas.before:
+        Color:
+            rgba:self.color_selected_ms if self.is_selected and self.is_ms else self.color_selected if self.is_selected else self.even_color
+        Rectangle:
+            pos: [self.parent.x, self.y] if self.parent else [0, 0]
+            size: [self.parent.width, self.height] if self.parent else [1, 1]
     canvas.after:
         Clear
 
@@ -166,7 +178,7 @@
         halign: "left"
         mipmap: False
         bold: False
-        shorten: root.shorten
+        shorten: not(root.is_selected)
         text: root.text
         shorten_from: "right"
         id: node_label
@@ -197,7 +209,7 @@
         halign: "left"
         mipmap: True
         bold: False
-        shorten: root.shorten
+        shorten: not(root.is_selected)
         text: root.text
         shorten_from: "right"
         id: node_label

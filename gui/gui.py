@@ -87,7 +87,7 @@ class TagEditorLayout(BoxLayout):
         self.input_list = [x for x in self.ids.keys() if "Input" in x]
         self.previous_input_dict = {re.sub("Input", "", key): "" for key in self.input_list}
         self.differentiated_input_dict = dict()
-        self.current_tags = self.previous_input_dict
+        self.current_tags = dict()
 
     def print_text_input(self):
         """
@@ -102,21 +102,37 @@ class TagEditorLayout(BoxLayout):
                                           self.current_tags if self.current_tags[key] !=
                                           self.previous_input_dict[key]}
         print self.differentiated_input_dict
-        print self.previous_input_dict
-        self.previous_input_dict = self.current_tags
-        print self. current_tags
+        self.previous_input_dict = {key: self.current_tags[key] for key in self.current_tags}
 
-    def input_text_change(self, _, tree_node):
+    def node_select_handler(self, tree_view, tree_node):
+
         if tree_node.node_type == "File":
-            self.tagger = EasyTagger(tree_node.path)
-            tags_dict = self.tagger.get_tags()
-            self.previous_input_dict = tags_dict
+            if tree_view.is_multiple_selection:
+                self.multiple_nodes_handler(tree_view.selected_nodes)
+            else:
+                self.tagger = EasyTagger(tree_node.path)
+                tags_dict = self.tagger.get_tags()
+                self.previous_input_dict = tags_dict
+                self.change_text_boxes(tags_dict)
+        else:
             for input_text in self.input_list:
-                self.ids[input_text].text = tags_dict[
-                    re.sub("Input", "", input_text)]
-                self.ids[input_text].cursor = (0, 0)    # Resets cursor position.
+                self.ids[input_text].text = str()
+                self.ids[input_text].cursor = (0, 0)  # Resets cursor position.
                 self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
+    def multiple_nodes_handler(self, nodes_list):
+        tag_dictionary_list = [EasyTagger(node.path).get_tags() for node in nodes_list]
+        dic = tag_dictionary_list[0]
+        x = {key: dic[key] if all([y[key] == dic[key] for y in tag_dictionary_list])
+                                                else "*Multiple Tags*" for key in dic}
+        self.change_text_boxes(x)
+
+    def change_text_boxes(self, tags_dict):
+        for input_text in self.input_list:
+            self.ids[input_text].text = tags_dict[
+                re.sub("Input", "", input_text)]
+            self.ids[input_text].cursor = (0, 0)  # Resets cursor position.
+            self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
 """Labels and Buttons:"""
 
@@ -154,8 +170,9 @@ class FileNode(BoxLayout, BorderLessNode):
     is_mapped = BooleanProperty(True)
     node_type = StringProperty("File")
     text = StringProperty("")
-    shorten = BooleanProperty(True)
-    color_selected = [.0, .0, .0, .07]
+    color_selected_ms = [0, .8, .9, .2]
+    is_ms = BooleanProperty(False)
+    color_selected = [.0, .0, .0, .03]
     even_color = [.5, .5, .5, 0]
 
 
@@ -166,8 +183,9 @@ class FolderNode(BoxLayout, BorderLessNode):
     is_mapped = BooleanProperty(True)
     node_type = StringProperty("Folder")
     text = StringProperty("")
-    shorten = BooleanProperty(True)
-    color_selected = [.0, .0, .0, .07]
+    color_selected = [.0, .0, .0, .03]
+    color_selected_ms = [0, .8, .9, .2]
+    is_ms = BooleanProperty(False)
     even_color = [.2, .2, .2, 0]
 
 
@@ -176,7 +194,9 @@ class RootNode(Label, TreeViewNode):
     path = StringProperty("")
     is_mapped = BooleanProperty(False)
     node_type = StringProperty("Root")
-    color_selected = [.0, .0, .0, .07]
+    color_selected = [.0, .0, .0, .03]
+    color_selected_ms = [0, .8, .9, .2]
+    is_ms = BooleanProperty(False)
     no_selection = True
 
 
@@ -249,10 +269,11 @@ class DynamicTree(TreeView):
         return True
 
     def enable_multiple_selection(self, _):
+        self.selected_node.is_ms = True
         self.is_multiple_selection = True
 
     def ms_clock_on(self, _, touch,):
-        self.ms_event = Clock.schedule_once(self.enable_multiple_selection, 1)
+        self.ms_event = Clock.schedule_once(self.enable_multiple_selection, .6)
 
     def ms_clock_off(self, _, touch,):
         if self.ms_event:
@@ -268,11 +289,14 @@ class DynamicTree(TreeView):
         if self.is_multiple_selection:
             if node in self.selected_nodes:
                 node.is_selected = False
+                node.is_ms = False
                 self.selected_nodes.remove(node)
                 if not self.selected_nodes:
                     self.is_multiple_selection = False
             else:
+                node.is_ms = True
                 node.is_selected = True
+
                 self.selected_nodes.append(node)
         else:
             if self._selected_node:
@@ -297,9 +321,7 @@ class DynamicTree(TreeView):
         pass
 
     def on_select(self, node):
-        if self.deselected_node:
-            self.deselected_node.shorten = True
-        node.shorten = False
+        pass
 
     def check_for_directory(self, node):
         """Read the contents of the folder represented by 'node' argument."""
@@ -419,8 +441,7 @@ class MetadorGui(App):
         self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
                                               spacing=50, padding=[25, 0, 25, 0])
-        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.6)
-        self.bottom_layout = BottomLayout(orientation="vertical")
+        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.4)
         self.center_layout = CenterLayout(orientation="vertical")
         self.app_menu_layout = AppMenuLayout()
         self.center_layout.add_widget(self.editor_carousel)
@@ -440,7 +461,6 @@ class MetadorGui(App):
         self.upper_layout.add_widget(self.tag_editor)
         self.root_layout.add_widget(self.app_menu_layout)
         self.root_layout.add_widget(self.upper_layout)
-        # self.root_layout.add_widget(self.bottom_layout)
 
         return self.root_layout
 
@@ -453,7 +473,7 @@ class MetadorGui(App):
         self.tree_view.bind(on_select=self.tree_view.ms_clock_on)
         self.tree_view.bind(on_touch_up=self.tree_view.ms_clock_off)
         self.tree_view.bind(is_multiple_selection=self.multiple_selection_handler)
-        self.tree_view.bind(on_select=self.tag_editor.input_text_change)
+        self.tree_view.bind(on_select=self.tag_editor.node_select_handler)
         self.tree_view.bind(minimum_height=self.tree_view.setter("height"))
         self.tree_view.bind(on_file_doubleclick=self.file_doubleclick_handler)
         self.tree_view.bind(on_folder_doubleclick=self.folder_doubleclick_handler)
@@ -525,6 +545,7 @@ class MetadorGui(App):
             self.change_carousel(filter_carousel, 1)
             for node in self.tree_view.selected_nodes:  # Clear all selected nodes.
                 node.is_selected = False
+                node.is_ms = False
             self.tree_view.selected_nodes = list()
 
     def folder_doubleclick_handler(self, tree_instance, node):
@@ -545,7 +566,8 @@ class MetadorGui(App):
         self.app_menu_layout.ids.tree_progress.start_spinning()
 
     def tree_loading_stop(self):
-        self.app_menu_layout.ids.tree_progress.stop_spinning()
+        Clock.schedule_once(self.app_menu_layout.ids.tree_progress.stop_spinning,1)
+
 
 if __name__ == '__main__':
     MetadorGui().run()
