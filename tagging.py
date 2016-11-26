@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import re
+from os import chmod
+from mutagen import MutagenError
 from mutagen.id3 import ID3, ID3NoHeaderError, TPE1, TALB, TIT2, TRCK, TDRC, TCON, TPE2, APIC
 from mutagen.mp4 import MP4
 from mutagen.apev2 import APEv2, APENoHeaderError
@@ -158,10 +162,13 @@ class EasyTagger(object):
         # CR- Bad Naming - doesn't describe the action of this method.
         field = field.title()
         if self.extension in ['.mp3', '.aiff']:
-            self.tagger.edit_value(EasyTagger.id3_trans(field), value)
-        elif self.extension in ['.m4a']:
-            self.tagger.edit_value(EasyTagger.mp4_trans(field), value)
-        else:
+            field = EasyTagger.id3_trans(field)
+        if self.extension in ['.m4a']:
+            field = EasyTagger.mp4_trans(field)
+        try:
+            self.tagger.edit_value(field, value)
+        except MutagenError:
+            chmod(self.fname, 128)      # change READ_ONLY property
             self.tagger.edit_value(field, value)
 
     def get_tags(self):
@@ -177,4 +184,3 @@ class EasyTagger(object):
         self.tagger.clear_tags()
         for key in tags_dict:
             self.edit_value(key, tags_dict[key])
-
