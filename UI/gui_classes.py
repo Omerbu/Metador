@@ -23,13 +23,16 @@ class SimpleTransparentButton(Button):
 
 class FlatButton(SimpleTransparentButton):
 
+    icon_color = StringProperty("5c7f8a")
     underline_color = ListProperty([1, 1, 1, 0])
 
     def on_state(self, _, new_state):
         if new_state == 'down':
             self.underline_color = [0, 1, 1, 1]
+            self.icon_color = "00ffff"
         else:
             self.underline_color = [1, 1, 1, 0]
+            self.icon_color = "5c7f8a"
 
 
 class TransparentButton(Button):

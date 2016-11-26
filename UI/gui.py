@@ -3,13 +3,16 @@ import re
 import os
 import os.path
 import scandir
-from functools import partial
 from tagging import EasyTagger
+from kivy.core.window import Window
+from kivy.core.image import ImageData
 from kivy.clock import Clock
 from kivy.config import Config
-from kivy.uix.modalview import ModalView
 from kivy.app import App
+from kivy.graphics.texture import Texture
+from kivy.graphics import Rectangle
 from kivy.uix.carousel import Carousel
+from kivy.uix.modalview import ModalView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
@@ -19,18 +22,13 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.uix.checkbox import CheckBox
-from kivy.graphics import Rectangle
-from kivy.properties import StringProperty, BooleanProperty,ListProperty
+from kivy.properties import StringProperty, BooleanProperty, ListProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
-from kivy.graphics.texture import Texture
-from kivy.garden.progressspinner import ProgressSpinner
-from kivy.core.window import Window
-from kivy.core.image import ImageData
-from gui_classes import AnimatedBoxLayout, HoverBehavior,\
-                         BorderLessNode, ToggleFlatButton,\
-                        FlatButton
-from kivy.garden.iconfonts import iconfonts
+from gui_classes import AnimatedBoxLayout, BorderLessNode,\
+                        ToggleFlatButton, FlatButton
+import iconfonts
+from progressspiner import ProgressSpinner
 from meta_utils import time_decorator
 
 """Config """
@@ -82,6 +80,8 @@ class TagEditorLayout(BoxLayout):
 
     """
 
+    MULTIPLE_TAGS_CONST = "*Multiple*"
+
     def __init__(self):
         super(TagEditorLayout, self).__init__()
         self.input_list = [x for x in self.ids.keys() if "Input" in x]
@@ -94,15 +94,16 @@ class TagEditorLayout(BoxLayout):
         Future 'Apply Changes' method for writing tags to the selected
         music file.
 
-        Feature DOES NOT WORK PROPERLY!!!!
         """
         for input_text in self.input_list:
             self.current_tags[re.sub("Input", "", input_text)] = self.ids[input_text].text
         self.differentiated_input_dict = {key: self.current_tags[key] for key in
                                           self.current_tags if self.current_tags[key] !=
                                           self.previous_input_dict[key]}
-        print self.differentiated_input_dict
+        self.differentiated_input_dict = {k: v for k, v in
+              self.differentiated_input_dict.iteritems() if v != self.MULTIPLE_TAGS_CONST}
         self.previous_input_dict = {key: self.current_tags[key] for key in self.current_tags}
+        return self.differentiated_input_dict
 
     def node_select_handler(self, tree_view, tree_node):
 
@@ -122,10 +123,12 @@ class TagEditorLayout(BoxLayout):
 
     def multiple_nodes_handler(self, nodes_list):
         tag_dictionary_list = [EasyTagger(node.path).get_tags() for node in nodes_list]
-        dic = tag_dictionary_list[0]
-        x = {key: dic[key] if all([y[key] == dic[key] for y in tag_dictionary_list])
-                                                else "*Multiple Tags*" for key in dic}
-        self.change_text_boxes(x)
+        first_dictionary = tag_dictionary_list[0]
+        combined_dictionary = {key: first_dictionary[key] if all(
+            [comp_dict[key] == first_dictionary[key] for comp_dict
+             in tag_dictionary_list[1:]]) else
+                self.MULTIPLE_TAGS_CONST for key in first_dictionary}
+        self.change_text_boxes(combined_dictionary)
 
     def change_text_boxes(self, tags_dict):
         for input_text in self.input_list:
@@ -258,7 +261,10 @@ class DynamicTree(TreeView):
         elif node.x - self.indent_start <= touch.x:
             if touch.is_double_tap:
                 if node.node_type == "File":
-                    self.dispatch("on_file_doubleclick", node)
+                    if self.is_multiple_selection:
+                        return
+                    else:
+                        self.dispatch("on_file_doubleclick", node)
                 elif node.node_type == "Root":
                     self.dispatch("on_root_doubleclick", node)
                 else:
@@ -408,12 +414,19 @@ class ConverterList(DynamicTree):
     def filter_dir_gen(self, path):
         pass
 
-    def modify_list(self, input_node):
-        """
-        A 2 in 1 method, that allows do add\ remove nodes from the list widget.
-        If input_node already exists in the list widget, it removes it.
+    def clear_tree_view(self):
+        self.multiple_remove_from_list([node for node in self.iterate_all_nodes()
+                                        if not node.text == "Root"])
 
-        """
+    def remove_from_list(self, input_node):
+        if not input_node:
+            return
+        self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
+                          not sub_node.text == "Root"]
+        [self.remove_node(to_remove_node) for to_remove_node in
+            self.node_list if to_remove_node.path == input_node.path]
+
+    def add_to_list(self, input_node):
         if not input_node:
             return
         self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
@@ -421,12 +434,16 @@ class ConverterList(DynamicTree):
         self.node_path_list = [n_path.path for n_path in self.node_list]
         if input_node.path not in self.node_path_list:
             self.add_node(FileNode(path=input_node.path,
-                                    text=input_node.text,
+                                   text=input_node.text,
                                    file_size=input_node.file_size))
-        else:
-            [self.remove_node(to_remove_node) for to_remove_node in
-             self.node_list if to_remove_node.path == input_node.path]
 
+    def multiple_add_to_list(self, node_list):
+        for node in node_list:
+            self.add_to_list(node)
+
+    def multiple_remove_from_list(self, node_list):
+        for node in node_list:
+            self.remove_from_list(node)
 
 class MetadorGui(App):
 
@@ -479,14 +496,14 @@ class MetadorGui(App):
         self.tree_view.bind(on_folder_doubleclick=self.folder_doubleclick_handler)
         self.tree_view.bind(on_root_doubleclick=self.root_doubleclick_handler)
         self.tree_view.id = "tree_view_id"
-        self.mapping_event("D:\The Music")
+        self.mapping_event("D:\TestMusic")
         self.left_layout.ids.filter_carousel.index = 1
 
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
-        self.drag_modal = DragModal(pos_hint={"x": 0.05, "y": 0.45})
+        self.drag_modal = DragModal(pos_hint={"x": 0, "y": 0.5})
         self.drag_modal.children[0].text = "Drag Here Your Music Folder"
-        self.converter_modal = DragModal(pos_hint={"x": 0.6, "y": 0.5})
+        self.converter_modal = DragModal(pos_hint={"x": 0.36, "y": 0.5})
         self.converter_modal.children[0].text = "Drag Here Your Destination Folder"
         self.about_modal = AboutModal()
 
@@ -508,6 +525,16 @@ class MetadorGui(App):
     @staticmethod
     def change_carousel(carousel, slide_num):
         carousel.load_slide(carousel.slides[slide_num])
+
+    def write_tags(self):
+        input_tags = self.tag_editor.print_text_input()
+        if not input_tags:
+            return
+        if self.tree_view.is_multiple_selection:
+            for node in self.tree_view.selected_nodes:
+                EasyTagger(node.path).set_tags()
+        else:
+            EasyTagger(self.tree_view.selected_node.path).set_tags(input_tags)
 
     """File Explorer Event Handlers"""
 
@@ -548,19 +575,18 @@ class MetadorGui(App):
                 node.is_ms = False
             self.tree_view.selected_nodes = list()
 
-    def folder_doubleclick_handler(self, tree_instance, node):
+    def folder_doubleclick_handler(self, _, node):
         self.mapping_event(node.path)
 
-    def file_doubleclick_handler(self, tree_instnace, node):
+    def file_doubleclick_handler(self, _, node):
         if self.editor_carousel.index == 1:
-            self.converter_layout.ids.converter_list.modify_list(node)
+            self.converter_layout.ids.converter_list.add_to_list(node)
         else:
             return
 
-    def root_doubleclick_handler(self, tree_instance, node):
+    def root_doubleclick_handler(self, _, node):
         parent_path = os.path.split(node.path)[0]
         self.mapping_event(parent_path)
-
 
     def tree_loading_start(self):
         self.app_menu_layout.ids.tree_progress.start_spinning()
