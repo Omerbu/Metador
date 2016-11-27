@@ -2,7 +2,7 @@
 
 import re
 from os import chmod
-from mutagen import MutagenError
+from mutagen import MutagenError, File
 from mutagen.id3 import ID3, ID3NoHeaderError, TPE1, TALB, TIT2, TRCK, TDRC, TCON, TPE2, APIC
 from mutagen.mp4 import MP4
 from mutagen.apev2 import APEv2, APENoHeaderError
@@ -142,6 +142,9 @@ class EasyTagger(object):
             return mp4dict[field.lower()]
         except KeyError:
             return field
+
+    def get_duration(self):
+        return File(self.fname).info.length
 
     def get_value(self, field):
         field = field.title()
