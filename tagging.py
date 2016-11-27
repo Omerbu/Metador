@@ -168,7 +168,7 @@ class EasyTagger(object):
         try:
             self.tagger.edit_value(field, value)
         except MutagenError:
-            chmod(self.fname, 128)      # change READ_ONLY property
+            chmod(self.fname, 128)      # disable READ_ONLY property
             self.tagger.edit_value(field, value)
 
     def get_tags(self):
@@ -177,10 +177,16 @@ class EasyTagger(object):
             try:
                 tags_dict[key] = self.get_value(key)
             except KeyError:
-                tags_dict[key] = ''
+                tags_dict[key] = u''
         return tags_dict
 
     def set_tags(self, tags_dict):
-        self.tagger.clear_tags()
+        self.clean_tags()
         for key in tags_dict:
             self.edit_value(key, tags_dict[key])
+
+    def clean_tags(self):
+        old_tags = self.get_tags()
+        self.tagger.clear_tags()
+        for key in old_tags:
+            self.edit_value(key, old_tags[key])
