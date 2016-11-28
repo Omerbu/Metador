@@ -28,4 +28,8 @@ def search_wiki(artist):
         else:
             return
     first_paragraph = soup.p
+    for cite in first_paragraph.find_all("sup"):
+        cite.decompose()
+    for ipa in first_paragraph.find_all("span", {"class": "IPA"}):
+        ipa.parent.decompose()
     return first_paragraph.text
