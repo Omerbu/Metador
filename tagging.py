@@ -143,8 +143,11 @@ class EasyTagger(object):
         except KeyError:
             return field
 
-    def get_duration(self):
-        return File(self.fname).info.length
+    def get_duration(self, minute_string=True):
+        seconds = int(File(self.fname).info.length)
+        if minute_string:
+            return str(seconds / 60) + ':' + str(seconds % 60)
+        return seconds
 
     def get_value(self, field):
         field = field.title()
