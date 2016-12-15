@@ -93,7 +93,7 @@ class FlacTagger(object):
         self.tags.save(self.fname)
 
     def clear_tags(self):
-        self.tags = FLAC()
+        self.tags.delete()
         self.tags.save(self.fname)
 
 
