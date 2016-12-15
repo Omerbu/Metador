@@ -7,7 +7,7 @@
     spacing: 15
     canvas:
         Color:
-            rgba:.95,.95,1,.5
+            rgba:.95,.95,1,.6
         Rectangle:
             texture: self.back_texture.texture
             pos:self.pos
@@ -69,6 +69,7 @@
 
 <FilterCheckBox@CheckBox>:
     active: True
+    ext: ""
 
 <LeftLayout>:
     spacing: 2
@@ -124,21 +125,27 @@
                     Label:
                         text: "MP3"
                     FilterCheckBox:
-                        id: flac_ch
+                        id: FLAC_ch
+                        ext: "flac"
                     FilterCheckBox:
-                        id: m4a_ch
+                        id: ALAC_ch
+                        ext: "m4a"
                     FilterCheckBox:
-                        id: flac_ch
+                        id: OGG_ch
+                        ext: "ogg"
                     FilterCheckBox:
-                        id: wma_ch
+                        id: WMA_ch
+                        ext: "wma"
                     FilterCheckBox:
-                        id: aiff_ch
+                        id: AIFF_ch
+                        ext: "aiff"
                     FilterCheckBox:
-                        id: mp3_ch
+                        id: MP3_ch
+                        ext: "mp3"
                 FlatButton:
                     size_hint: 0.2,1
                     text: "Filter"
-                    on_press:
+                    on_press: app.files_filter_handler()
                     on_release: app.change_carousel(filter_carousel,1)
     SpacedHoLine:
 

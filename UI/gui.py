@@ -27,9 +27,11 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from gui_classes import AnimatedBoxLayout, BorderLessNode,\
                         ToggleFlatButton, FlatButton
+import meta_bio_retriever
 import iconfonts
 from progressspiner import ProgressSpinner
 from meta_utils import time_decorator
+from kivy.network import urlrequest
 
 """Config """
 Config.set('kivy', 'desktop', '1')
@@ -105,6 +107,7 @@ class TagEditorLayout(BoxLayout):
         self.previous_input_dict = {key: self.current_tags[key] for key in self.current_tags}
         return self.differentiated_input_dict
 
+    @time_decorator
     def node_select_handler(self, tree_view, tree_node):
 
         if tree_node.node_type == "File":
@@ -115,6 +118,7 @@ class TagEditorLayout(BoxLayout):
                 tags_dict = self.tagger.get_tags()
                 self.previous_input_dict = tags_dict
                 self.change_text_boxes(tags_dict)
+                # print meta_bio_retriever.search_wiki(tags_dict["Artist"])
         else:
             for input_text in self.input_list:
                 self.ids[input_text].text = str()
@@ -496,7 +500,7 @@ class MetadorGui(App):
         self.tree_view.bind(on_folder_doubleclick=self.folder_doubleclick_handler)
         self.tree_view.bind(on_root_doubleclick=self.root_doubleclick_handler)
         self.tree_view.id = "tree_view_id"
-        self.mapping_event("D:\TestMusic")
+        self.mapping_event("D:\The Music")
         self.left_layout.ids.filter_carousel.index = 1
 
     def modal_config(self):
@@ -587,6 +591,14 @@ class MetadorGui(App):
     def root_doubleclick_handler(self, _, node):
         parent_path = os.path.split(node.path)[0]
         self.mapping_event(parent_path)
+
+    def files_filter_handler(self):
+        filter_chs = [self.left_layout.ids[widget].ext for widget in
+                      self.left_layout.ids if "_ch" in widget and
+                      self.left_layout.ids[widget].active]
+        filter_chs = "|".join(filter_chs)
+        self.tree_view.FILE_FILTER = ".*\.({0})$".format(filter_chs)
+        self.tree_refresh()
 
     def tree_loading_start(self):
         self.app_menu_layout.ids.tree_progress.start_spinning()
