@@ -41,7 +41,13 @@ def search_wiki(artist, maxchars=300):
     return first_paragraph.text[:maxchars], html_content.geturl()
 
 
-def search_lastfm(artist, maxchars=300):
+def return_lastfm_address(artist):
+    url_lastfm = "http://www.last.fm/music/"
+    page = artist.replace(" ", "+") + "/+wiki"
+    return url_lastfm + page
+
+
+def search_lastfm(html_content, maxchars=300):
     """ Retrieve artist's bio from LastFM.
 
     Args:
@@ -53,16 +59,10 @@ def search_lastfm(artist, maxchars=300):
         If no data was found, returns None.
     """
 
-    url_lastfm = "http://www.last.fm/music/"
-    page = artist.replace(" ", "+") + "/+wiki"
-    try:
-        html_content = urllib2.urlopen(url_lastfm + page)
-    except urllib2.HTTPError:
-        return None
     soup = BeautifulSoup(html_content, "html.parser")
     wiki_content = soup.find("div", {"class": "wiki-content"})
     try:
         text = wiki_content.get_text(separator="\n", strip=True)
     except AttributeError:
         return None
-    return text[:maxchars], html_content.geturl()
+    return text[:maxchars]

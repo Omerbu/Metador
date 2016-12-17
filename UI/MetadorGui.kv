@@ -7,7 +7,7 @@
     spacing: 15
     canvas:
         Color:
-            rgba:.95,.95,1,.6
+            rgba:.95,.95,1,.5
         Rectangle:
             texture: self.back_texture.texture
             pos:self.pos
@@ -300,7 +300,7 @@
         size_hint:1, None
         height: 110
         id: lbl_file
-        text: "Camel are an English progressive rock band formed in 1971. Led by founding member Andrew Latimer, they have produced 14 original studio albums, 14 singles plus numerous other compilation and live albums."
+        text: "Artist Biography"
         text_size: self.size
         font_size: 15
         valign: "top"
@@ -528,7 +528,7 @@
 
 <AppMenuLayout>:
     size_hint:1,None
-    size: 0,40
+    size: 0,38
     canvas:
         Color:
             rgba: [.2,.1,.3,.2]
@@ -580,7 +580,7 @@
             source: "icons\\music_cover.png"
         Label:
             size_hint:(1,0.1)
-            text: "Version 0.0.0.1"
+            text: "Version 0.1 Pre-Alpha"
             font_size: 13
         BoxLayout:
             spacing: 3

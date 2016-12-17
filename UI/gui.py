@@ -31,7 +31,7 @@ import meta_bio_retriever
 import iconfonts
 from progressspiner import ProgressSpinner
 from meta_utils import time_decorator
-from kivy.network import urlrequest
+from kivy.network.urlrequest import UrlRequest
 
 """Config """
 Config.set('kivy', 'desktop', '1')
@@ -91,7 +91,7 @@ class TagEditorLayout(BoxLayout):
         self.differentiated_input_dict = dict()
         self.current_tags = dict()
 
-    def print_text_input(self):
+    def tags_input(self):
         """
         Future 'Apply Changes' method for writing tags to the selected
         music file.
@@ -107,7 +107,6 @@ class TagEditorLayout(BoxLayout):
         self.previous_input_dict = {key: self.current_tags[key] for key in self.current_tags}
         return self.differentiated_input_dict
 
-    @time_decorator
     def node_select_handler(self, tree_view, tree_node):
 
         if tree_node.node_type == "File":
@@ -118,7 +117,9 @@ class TagEditorLayout(BoxLayout):
                 tags_dict = self.tagger.get_tags()
                 self.previous_input_dict = tags_dict
                 self.change_text_boxes(tags_dict)
-                # print meta_bio_retriever.search_wiki(tags_dict["Artist"])
+                artist_address = meta_bio_retriever.return_lastfm_address(tags_dict["Artist"])
+                req = UrlRequest(artist_address,
+                                 self.artist_bio_handler)
         else:
             for input_text in self.input_list:
                 self.ids[input_text].text = str()
@@ -140,6 +141,14 @@ class TagEditorLayout(BoxLayout):
                 re.sub("Input", "", input_text)]
             self.ids[input_text].cursor = (0, 0)  # Resets cursor position.
             self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
+
+    def artist_bio_handler(self, req, results):
+        bio = meta_bio_retriever.search_lastfm(results)
+        if bio:
+            self.ids['lbl_file'].text = bio
+        else:
+            self.ids['lbl_file'].text = "No Artist Biography Found "
+
 
 """Labels and Buttons:"""
 
@@ -433,13 +442,19 @@ class ConverterList(DynamicTree):
     def add_to_list(self, input_node):
         if not input_node:
             return
-        self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
-                          not sub_node.text == "Root"]
-        self.node_path_list = [n_path.path for n_path in self.node_list]
-        if input_node.path not in self.node_path_list:
-            self.add_node(FileNode(path=input_node.path,
-                                   text=input_node.text,
-                                   file_size=input_node.file_size))
+        if input_node.node_type == "Folder":
+            self.add_folder_content(input_node)
+        else:
+            self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
+                              not sub_node.text == "Root"]
+            self.node_path_list = [n_path.path for n_path in self.node_list]
+            if input_node.path not in self.node_path_list:
+                self.add_node(FileNode(path=input_node.path,
+                                       text=input_node.text,
+                                       file_size=input_node.file_size))
+
+    def add_folder_content(self, folder_node):
+        pass
 
     def multiple_add_to_list(self, node_list):
         for node in node_list:
@@ -449,13 +464,14 @@ class ConverterList(DynamicTree):
         for node in node_list:
             self.remove_from_list(node)
 
+
 class MetadorGui(App):
 
     def build(self):
         iconfonts.register('default_font', 'fontawesome-webfont.ttf',
                            'font-awesome.fontd')
         Window.bind(on_dropfile=self.drop_file_event_handler)
-        Window.size = (1300, 850)
+        Window.size = (1350, 850)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.icon = "icons\\music_cover.png"
         self.modal_config()
@@ -531,12 +547,12 @@ class MetadorGui(App):
         carousel.load_slide(carousel.slides[slide_num])
 
     def write_tags(self):
-        input_tags = self.tag_editor.print_text_input()
+        input_tags = self.tag_editor.tags_input()
         if not input_tags:
             return
         if self.tree_view.is_multiple_selection:
             for node in self.tree_view.selected_nodes:
-                EasyTagger(node.path).set_tags()
+                EasyTagger(node.path).set_tags(input_tags)
         else:
             EasyTagger(self.tree_view.selected_node.path).set_tags(input_tags)
 
