@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from bs4 import BeautifulSoup
 import urllib2
+from kivy.network.urlrequest import UrlRequest
 
 
 def search_wiki(artist, maxchars=300):
@@ -41,28 +42,32 @@ def search_wiki(artist, maxchars=300):
     return first_paragraph.text[:maxchars], html_content.geturl()
 
 
-def return_lastfm_address(artist):
-    url_lastfm = "http://www.last.fm/music/"
-    page = artist.replace(" ", "+") + "/+wiki"
-    return url_lastfm + page
+class BioRetriever(object):
 
+    def lastfm_bio_handler(self, artist, callback_function):
+        url_lastfm = "http://www.last.fm/music/"
+        page = artist.replace(" ", "+") + "/+wiki"
+        full_address = url_lastfm + page
+        self.callback_function = callback_function
+        url_req = UrlRequest(full_address, self.search_lastfm)
 
-def search_lastfm(html_content, maxchars=300):
-    """ Retrieve artist's bio from LastFM.
+    def search_lastfm(self, req, html_content, maxchars=300):
+        """ Retrieve artist's bio from LastFM.
 
-    Args:
-        artist (string): The name of the artist (or band) to be searched.
-        maxchars (int): The maximum number of characters to return.
+        Args:
+            artist (string): The name of the artist (or band) to be searched.
+            maxchars (int): The maximum number of characters to return.
 
-    Returns:
-        A tuple containing the retrieved text (up to maxchars) and the url of the page.
-        If no data was found, returns None.
-    """
+        Returns:
+            A tuple containing the retrieved text (up to maxchars) and the url of the page.
+            If no data was found, returns None.
+        """
 
-    soup = BeautifulSoup(html_content, "html.parser")
-    wiki_content = soup.find("div", {"class": "wiki-content"})
-    try:
-        text = wiki_content.get_text(separator="\n", strip=True)
-    except AttributeError:
-        return None
-    return text[:maxchars]
+        soup = BeautifulSoup(html_content, "html.parser")
+        wiki_content = soup.find("div", {"class": "wiki-content"})
+        try:
+            text = wiki_content.get_text(separator="\n", strip=True)
+        except AttributeError:
+            return None
+        parsed_bio = text[:maxchars]
+        self.callback_function(parsed_bio)

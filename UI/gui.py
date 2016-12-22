@@ -22,7 +22,8 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import ButtonBehavior
 from kivy.uix.label import Label
 from kivy.uix.checkbox import CheckBox
-from kivy.properties import StringProperty, BooleanProperty, ListProperty
+from kivy.properties import StringProperty, BooleanProperty, ListProperty, \
+                            ObjectProperty, NumericProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from gui_classes import AnimatedBoxLayout, BorderLessNode,\
@@ -109,17 +110,15 @@ class TagEditorLayout(BoxLayout):
 
     def node_select_handler(self, tree_view, tree_node):
 
-        if tree_node.node_type == "File":
-            if tree_view.is_multiple_selection:
-                self.multiple_nodes_handler(tree_view.selected_nodes)
-            else:
-                self.tagger = EasyTagger(tree_node.path)
-                tags_dict = self.tagger.get_tags()
-                self.previous_input_dict = tags_dict
-                self.change_text_boxes(tags_dict)
-                artist_address = meta_bio_retriever.return_lastfm_address(tags_dict["Artist"])
-                req = UrlRequest(artist_address,
-                                 self.artist_bio_handler)
+        if tree_view.is_multiple_selection:
+            self.multiple_nodes_handler(tree_view.selected_nodes)
+        elif tree_node.node_type == "File":
+            self.tagger = EasyTagger(tree_node.path)
+            tags_dict = self.tagger.get_tags()
+            self.previous_input_dict = tags_dict
+            self.change_text_boxes(tags_dict)
+           #  _ = meta_bio_retriever.BioRetriever().lastfm_bio_handler(tags_dict["Artist"],
+                                                    # self.artist_bio_handler())
         else:
             for input_text in self.input_list:
                 self.ids[input_text].text = str()
@@ -127,13 +126,15 @@ class TagEditorLayout(BoxLayout):
                 self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
     def multiple_nodes_handler(self, nodes_list):
-        tag_dictionary_list = [EasyTagger(node.path).get_tags() for node in nodes_list]
-        first_dictionary = tag_dictionary_list[0]
-        combined_dictionary = {key: first_dictionary[key] if all(
-            [comp_dict[key] == first_dictionary[key] for comp_dict
-             in tag_dictionary_list[1:]]) else
-                self.MULTIPLE_TAGS_CONST for key in first_dictionary}
-        self.change_text_boxes(combined_dictionary)
+        tag_dictionary_list = [EasyTagger(node.path).get_tags() for node
+                               in nodes_list if node.node_type == "File"]
+        if tag_dictionary_list:
+            first_dictionary = tag_dictionary_list[0]
+            combined_dictionary = {key: first_dictionary[key] if all(
+                [comp_dict[key] == first_dictionary[key] for comp_dict
+                in tag_dictionary_list[1:]]) else
+                    self.MULTIPLE_TAGS_CONST for key in first_dictionary}
+            self.change_text_boxes(combined_dictionary)
 
     def change_text_boxes(self, tags_dict):
         for input_text in self.input_list:
@@ -142,12 +143,13 @@ class TagEditorLayout(BoxLayout):
             self.ids[input_text].cursor = (0, 0)  # Resets cursor position.
             self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
 
-    def artist_bio_handler(self, req, results):
-        bio = meta_bio_retriever.search_lastfm(results)
-        if bio:
-            self.ids['lbl_file'].text = bio
-        else:
-            self.ids['lbl_file'].text = "No Artist Biography Found "
+    def artist_bio_handler(self, results):
+
+        self.ids['lbl_file'].text = results
+        # if bio:
+        #     self.ids['lbl_file'].text = bio
+        # else:
+        #     self.ids['lbl_file'].text = "No Artist Biography Found "
 
 
 """Labels and Buttons:"""
@@ -192,15 +194,25 @@ class FileNode(BoxLayout, BorderLessNode):
     even_color = [.5, .5, .5, 0]
 
 
+class ConverterNode(FileNode):
+    file_type = StringProperty("")
+    file_duration = StringProperty("")
+    no_selection = True
+
+
 class FolderNode(BoxLayout, BorderLessNode):
     file_icon = Image(source="icons\\grey_folder.png",
                       mipmap=True)
     path = StringProperty("")
     is_mapped = BooleanProperty(True)
+    is_sub_nodes = BooleanProperty(False)
     node_type = StringProperty("Folder")
     text = StringProperty("")
     color_selected = [.0, .0, .0, .03]
     color_selected_ms = [0, .8, .9, .2]
+    folder_color_sub_nodes = [0, 1, 1, 1]
+    folder_icon_color = [.6, .75, .8, 0.5]
+    is_sub_nodes = BooleanProperty(False)
     is_ms = BooleanProperty(False)
     even_color = [.2, .2, .2, 0]
 
@@ -290,6 +302,17 @@ class DynamicTree(TreeView):
     def enable_multiple_selection(self, _):
         self.selected_node.is_ms = True
         self.is_multiple_selection = True
+        self.selected_node.parent_node.is_sub_nodes = True
+
+    def disable_multiple_selection(self):
+        self.selected_node.is_ms = False
+        for node in self.selected_nodes:  # Clear all selected nodes.
+            node.is_selected = False
+            node.is_ms = False
+            if not any([x.is_selected for x in node.parent_node.nodes]):
+                node.parent_node.is_sub_nodes = False
+        self.selected_nodes = list()
+        self.is_multiple_selection = False
 
     def ms_clock_on(self, _, touch,):
         self.ms_event = Clock.schedule_once(self.enable_multiple_selection, .6)
@@ -307,15 +330,17 @@ class DynamicTree(TreeView):
             return
         if self.is_multiple_selection:
             if node in self.selected_nodes:
-                node.is_selected = False
                 node.is_ms = False
+                node.is_selected = False
+                if not any([x.is_selected for x in node.parent_node.nodes]):
+                    node.parent_node.is_sub_nodes = False
                 self.selected_nodes.remove(node)
                 if not self.selected_nodes:
-                    self.is_multiple_selection = False
+                    self.disable_multiple_selection()
             else:
                 node.is_ms = True
                 node.is_selected = True
-
+                node.parent_node.is_sub_nodes = True
                 self.selected_nodes.append(node)
         else:
             if self._selected_node:
@@ -418,6 +443,10 @@ class DynamicTree(TreeView):
 
 class ConverterList(DynamicTree):
 
+    def __init__(self, *args, **kwargs):
+        super(ConverterList, self).__init__(*args, **kwargs)
+        self.explorer_instance = ObjectProperty()
+
     def populate_tree_view(self, path):
         pass
 
@@ -449,20 +478,27 @@ class ConverterList(DynamicTree):
                               not sub_node.text == "Root"]
             self.node_path_list = [n_path.path for n_path in self.node_list]
             if input_node.path not in self.node_path_list:
-                self.add_node(FileNode(path=input_node.path,
+                input_node_duration = EasyTagger(input_node.path).get_duration()
+                self.add_node(ConverterNode(path=input_node.path,
                                        text=input_node.text,
-                                       file_size=input_node.file_size))
-
-    def add_folder_content(self, folder_node):
-        pass
+                                       file_size=input_node.file_size,
+                                       file_duration=input_node_duration))
 
     def multiple_add_to_list(self, node_list):
         for node in node_list:
+            print node.node_type
             self.add_to_list(node)
 
     def multiple_remove_from_list(self, node_list):
         for node in node_list:
             self.remove_from_list(node)
+
+    def add_folder_content(self, folder_node):
+        self.multiple_add_to_list(folder_node.nodes)
+
+
+
+
 
 
 class MetadorGui(App):
@@ -474,19 +510,19 @@ class MetadorGui(App):
         Window.size = (1350, 850)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.icon = "icons\\music_cover.png"
+        self.app_menu_layout = AppMenuLayout()
         self.modal_config()
         self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
                                               spacing=50, padding=[25, 0, 25, 0])
         self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.4)
         self.center_layout = CenterLayout(orientation="vertical")
-        self.app_menu_layout = AppMenuLayout()
         self.center_layout.add_widget(self.editor_carousel)
         self.metador_layout = MetadorLayout()
-        self.converter_layout = ConverterLayout()
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
         self.tree_view_config()
+        self.converter_layout = ConverterLayout()
         self.scroll_layout = ScrollView(bar_color=[.4, .6, .65, .35])
         self.scroll_layout.scroll_distance = 50
         self.scroll_layout.add_widget(self.tree_view)
@@ -528,6 +564,7 @@ class MetadorGui(App):
         self.about_modal = AboutModal()
 
     """APP EVENTS"""
+
     def drop_file_event_handler(self, window_instance, drop_file_string):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
@@ -590,10 +627,7 @@ class MetadorGui(App):
 
         else:
             self.change_carousel(filter_carousel, 1)
-            for node in self.tree_view.selected_nodes:  # Clear all selected nodes.
-                node.is_selected = False
-                node.is_ms = False
-            self.tree_view.selected_nodes = list()
+            self.tree_view.disable_multiple_selection()
 
     def folder_doubleclick_handler(self, _, node):
         self.mapping_event(node.path)
@@ -621,7 +655,6 @@ class MetadorGui(App):
 
     def tree_loading_stop(self):
         Clock.schedule_once(self.app_menu_layout.ids.tree_progress.stop_spinning,1)
-
 
 if __name__ == '__main__':
     MetadorGui().run()
