@@ -27,6 +27,12 @@ class MP3Tagger(object):
         self.tags.add(tag(encoding=enc, text=value))
         self.tags.save(self.fname)
 
+    def get_cover(self):
+        if 'APIC:' in self.tags:
+            return self.tags['APIC:'].data
+        else:
+            return
+
     def clear_tags(self):
         ID3().save(self.fname)
         self.tags = ID3(self.fname)
@@ -54,6 +60,12 @@ class MP4Tagger(object):
         self.tags[field] = [value]
         self.tags.save(self.fname)
 
+    def get_cover(self):
+        if 'covr' in self.tags:
+            return self.tags['covr'][0]
+        else:
+            return
+
     def clear_tags(self):
         self.tags.delete()
         MP4().save(self.fname)
@@ -75,6 +87,10 @@ class APEv2Tagger(object):
         self.tags[field] = value
         self.tags.save(self.fname)
 
+    def get_cover(self):
+        # to be added
+        return
+
     def clear_tags(self):
         self.tags = APEv2()
         self.tags.save(self.fname)
@@ -91,6 +107,12 @@ class FlacTagger(object):
     def edit_value(self, field, value):
         self.tags[field] = [unicode(value)]
         self.tags.save(self.fname)
+
+    def get_cover(self):
+        if self.tags.pictures:
+            return self.tags.pictures[0].data
+        else:
+            return
 
     def clear_tags(self):
         self.tags.delete()
@@ -148,6 +170,9 @@ class EasyTagger(object):
         if minute_string:
             return str(seconds / 60) + ':' + str(seconds % 60)
         return seconds
+
+    def get_cover(self):
+        return self.tagger.get_cover()
 
     def get_value(self, field):
         field = field.title()
