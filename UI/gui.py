@@ -117,8 +117,8 @@ class TagEditorLayout(BoxLayout):
             tags_dict = self.tagger.get_tags()
             self.previous_input_dict = tags_dict
             self.change_text_boxes(tags_dict)
-           #  _ = meta_bio_retriever.BioRetriever().lastfm_bio_handler(tags_dict["Artist"],
-                                                    # self.artist_bio_handler())
+            meta_bio_retriever.lastfm_bio_handler(tags_dict["Artist"],
+                                                  self.artist_bio_handler)
         else:
             for input_text in self.input_list:
                 self.ids[input_text].text = str()
@@ -146,10 +146,6 @@ class TagEditorLayout(BoxLayout):
     def artist_bio_handler(self, results):
 
         self.ids['lbl_file'].text = results
-        # if bio:
-        #     self.ids['lbl_file'].text = bio
-        # else:
-        #     self.ids['lbl_file'].text = "No Artist Biography Found "
 
 
 """Labels and Buttons:"""
@@ -494,11 +490,8 @@ class ConverterList(DynamicTree):
             self.remove_from_list(node)
 
     def add_folder_content(self, folder_node):
+        print folder_node.nodes
         self.multiple_add_to_list(folder_node.nodes)
-
-
-
-
 
 
 class MetadorGui(App):
