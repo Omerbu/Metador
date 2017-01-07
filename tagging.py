@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import re
-from os import chmod
 from mutagen import MutagenError, File
 from mutagen.id3 import ID3, ID3NoHeaderError, TPE1, TALB, TIT2, TRCK, TDRC, TCON, TPE2, APIC
-from mutagen.mp4 import MP4
+from mutagen.mp4 import MP4, MP4Cover
 from mutagen.apev2 import APEv2, APENoHeaderError
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC, Picture
 
 
 class MP3Tagger(object):
@@ -18,13 +17,13 @@ class MP3Tagger(object):
         self.tags = ID3(filename)
         self.fname = filename
 
-    def get_value(self, field):
-        return unicode(self.tags[field].text[0])
+    def __getitem__(self, item):
+        return unicode(self.tags[item].text[0])
 
-    def edit_value(self, field, value):
-        tag = globals().get(field)
-        enc = 0 if value.isdigit() else 1   # Encoding.LATIN1 for numbers. Encoding.UTF16 otherwise.
-        self.tags.add(tag(encoding=enc, text=value))
+    def __setitem__(self, key, value):
+        tag = globals().get(key)            # translates the string to a class name
+        enc = 0 if value.isdigit() else 3   # Encoding.LATIN1 for numbers. Encoding.UTF8 otherwise.
+        self.tags.setall(key, [tag(encoding=enc, text=unicode(value))])
         self.tags.save(self.fname)
 
     def get_cover(self):
@@ -32,6 +31,17 @@ class MP3Tagger(object):
             return self.tags['APIC:'].data
         else:
             return
+
+    def set_cover(self, image_string):
+        cover = APIC(
+                    encoding=3,     # 3 is for utf-8
+                    mime="image/jpeg",
+                    type=3,         # 3 is for the cover image
+                    desc=u'Front Cover',
+                    data=image_string
+                )
+        self.tags.setall("APIC:", [cover])
+        self.tags.save(self.fname)
 
     def clear_tags(self):
         ID3().save(self.fname)
@@ -43,28 +53,33 @@ class MP4Tagger(object):
         self.tags = MP4(filename)
         self.fname = filename
 
-    def get_value(self, field):
-        if field == "trkn":
-            return unicode(self.tags[field][0][0])
+    def __getitem__(self, item):
+        if item == "trkn":
+            return unicode(self.tags[item][0][0])
         else:
-            return unicode(self.tags[field][0])
+            return unicode(self.tags[item][0])
 
-    def edit_value(self, field, value):
-        if field == "trkn":
+    def __setitem__(self, key, value):
+        if key == "trkn":
             try:
                 value = (int(value), 0)
             except ValueError:
                 value = self.tags["trkn"][0]
         else:
             value = unicode(value)
-        self.tags[field] = [value]
+        self.tags[key] = [value]
         self.tags.save(self.fname)
 
     def get_cover(self):
         if 'covr' in self.tags:
-            return self.tags['covr'][0]
+            return bytes(self.tags['covr'][0])
         else:
             return
+
+    def set_cover(self, image_string):
+        cover = MP4Cover(image_string, MP4Cover.FORMAT_JPEG)
+        self.tags['covr'] = [cover]
+        self.tags.save(self.fname)
 
     def clear_tags(self):
         self.tags.delete()
@@ -80,16 +95,20 @@ class APEv2Tagger(object):
             self.tags = APEv2()
         self.fname = filename
 
-    def get_value(self, field):
-        return unicode(self.tags[field].value)
+    def __getitem__(self, item):
+        return unicode(self.tags[item].value)
 
-    def edit_value(self, field, value):
-        self.tags[field] = value
+    def __setitem__(self, key, value):
+        self.tags[key] = value
         self.tags.save(self.fname)
 
     def get_cover(self):
         # to be added
         return
+
+    def set_cover(self, image_string):
+        # to be added
+        pass
 
     def clear_tags(self):
         self.tags = APEv2()
@@ -101,11 +120,11 @@ class FlacTagger(object):
         self.tags = FLAC(filename)
         self.fname = filename
 
-    def get_value(self, field):
-        return unicode(self.tags[field][0])
+    def __getitem__(self, item):
+        return unicode(self.tags[item][0])
 
-    def edit_value(self, field, value):
-        self.tags[field] = [unicode(value)]
+    def __setitem__(self, key, value):
+        self.tags[key] = [unicode(value)]
         self.tags.save(self.fname)
 
     def get_cover(self):
@@ -113,6 +132,16 @@ class FlacTagger(object):
             return self.tags.pictures[0].data
         else:
             return
+
+    def set_cover(self, image_string):
+        pic = Picture()
+        pic.data = image_string
+        pic.type = 3
+        pic.desc = u'Front Cover'
+        pic.mime = "image/jpeg"
+        self.tags.clear_pictures()
+        self.tags.add_picture(pic)
+        self.tags.save(self.fname)
 
     def clear_tags(self):
         self.tags.delete()
@@ -133,19 +162,15 @@ class EasyTagger(object):
 
     def __init__(self, filename):
         self.fname = filename
-        # use regex to determine the file's extension.
         try:
             self.extension = re.search(r"\.[^.]+$", self.fname).group()
         except AttributeError:
             self.extension = ''
-        # choose appropriate tagger for this file type.
-        try:
-            self.tagger = self.TAGGERS[self.extension](filename)
-            # CR -  Bad Naming - format_specific_tagger or Specific_tagger would be better.
-        except KeyError:
-            raise MetadorTaggerError("unsupported file type")
 
-    # CR - This is an object wrapping a file that contains data, use  __iter__ , __setattr__ and __getatrr__.
+        if self.extension in self.TAGGERS:
+            self.tagger = self.TAGGERS[self.extension](filename)
+        else:
+            raise MetadorTaggerError("unsupported file type")
 
     @staticmethod
     def id3_trans(field):
@@ -168,45 +193,41 @@ class EasyTagger(object):
     def get_duration(self, minute_string=True):
         seconds = int(File(self.fname).info.length)
         if minute_string:
-            return str(seconds / 60) + ':' + str(seconds % 60)
+            return str(seconds / 60) + ':' + str(seconds % 60).zfill(2)
         return seconds
 
     def get_cover(self):
         return self.tagger.get_cover()
 
-    def get_value(self, field):
-        field = field.title()
+    def __getitem__(self, item):
+        item = item.title()
         if self.extension in ['.mp3', '.aiff']:
-            val = self.tagger.get_value(EasyTagger.id3_trans(field))
+            val = self.tagger[EasyTagger.id3_trans(item)]
         elif self.extension in ['.m4a']:
-            val = self.tagger.get_value(EasyTagger.mp4_trans(field))
+            val = self.tagger[EasyTagger.mp4_trans(item)]
         else:
-            val = self.tagger.get_value(field)
-        if field == "Tracknumber":
+            val = self.tagger[item]
+        if item == "Tracknumber":
             try:
-                val = re.search(r"\d+(?=\D|\Z)", val).group()
+                val = re.search(r"\d+(?=\D|\Z)", val).group()       # the first digit-only characters
             except AttributeError:
                 pass
         return val
 
-    def edit_value(self, field, value):
-        # CR- Bad Naming - doesn't describe the action of this method.
-        field = field.title()
-        if self.extension in ['.mp3', '.aiff']:
-            field = EasyTagger.id3_trans(field)
+    def __setitem__(self, key, value):
+        # will raise MutagenError if the file is read-only.
+        key = key.title()
+        if self.extension in ['.mp3']:
+            key = EasyTagger.id3_trans(key)
         if self.extension in ['.m4a']:
-            field = EasyTagger.mp4_trans(field)
-        try:
-            self.tagger.edit_value(field, value)
-        except MutagenError:
-            chmod(self.fname, 128)      # disable READ_ONLY property
-            self.tagger.edit_value(field, value)
+            key = EasyTagger.mp4_trans(key)
+        self.tagger[key] = value
 
     def get_tags(self):
         tags_dict = {}
         for key in self.FIELDS:
             try:
-                tags_dict[key] = self.get_value(key)
+                tags_dict[key] = self[key]
             except KeyError:
                 tags_dict[key] = u''
         return tags_dict
@@ -214,10 +235,10 @@ class EasyTagger(object):
     def set_tags(self, tags_dict):
         self.clean_tags()
         for key in tags_dict:
-            self.edit_value(key, tags_dict[key])
+            self[key] = tags_dict[key]
 
     def clean_tags(self):
         old_tags = self.get_tags()
         self.tagger.clear_tags()
         for key in old_tags:
-            self.edit_value(key, old_tags[key])
+            self[key] = old_tags[key]
