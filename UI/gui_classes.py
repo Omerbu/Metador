@@ -3,10 +3,13 @@ from kivy.uix.scrollview import ScrollView
 from kivy.properties import BooleanProperty, ObjectProperty, \
                             ListProperty, StringProperty, NumericProperty
 from kivy.core.window import Window
-from kivy.uix.button import Button
+from kivy.uix.button import Button, ButtonBehavior
 from kivy.uix.treeview import TreeViewNode
 from kivy.uix.togglebutton import ToggleButtonBehavior
-
+from kivy.uix.image import Image
+from kivy.core.image import Image as CoreImage
+from kivy.resources import resource_find
+from kivy.logger import Logger
 
 """Color Buttons"""
 
@@ -33,6 +36,14 @@ class FlatButton(SimpleTransparentButton):
         else:
             self.underline_color = [1, 1, 1, 0]
             self.icon_color = "5c7f8a"
+
+
+class CoverArtImage(ButtonBehavior, Image):
+
+    def __init__(self, **kwargs):
+        super(CoverArtImage, self).__init__(**kwargs)
+        self.source = "icons\\cover_art.jpg"
+        self.mipmap = True
 
 
 class TransparentButton(Button):
