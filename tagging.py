@@ -168,7 +168,7 @@ class EasyTagger(object):
             self.extension = ''
 
         if self.extension in self.TAGGERS:
-            self.tagger = self.TAGGERS[self.extension](filename)
+            self.tagger = EasyTagger.TAGGERS[self.extension](filename)
         else:
             raise MetadorTaggerError("unsupported file type")
 
@@ -201,12 +201,15 @@ class EasyTagger(object):
 
     def __getitem__(self, item):
         item = item.title()
-        if self.extension in ['.mp3', '.aiff']:
-            val = self.tagger[EasyTagger.id3_trans(item)]
-        elif self.extension in ['.m4a']:
-            val = self.tagger[EasyTagger.mp4_trans(item)]
-        else:
-            val = self.tagger[item]
+        try:
+            if self.extension in ['.mp3', '.aiff']:
+                val = self.tagger[EasyTagger.id3_trans(item)]
+            elif self.extension in ['.m4a']:
+                val = self.tagger[EasyTagger.mp4_trans(item)]
+            else:
+                val = self.tagger[item]
+        except KeyError:
+            return u''
         if item == "Tracknumber":
             try:
                 val = re.search(r"\d+(?=\D|\Z)", val).group()       # the first digit-only characters
@@ -224,13 +227,7 @@ class EasyTagger(object):
         self.tagger[key] = value
 
     def get_tags(self):
-        tags_dict = {}
-        for key in self.FIELDS:
-            try:
-                tags_dict[key] = self[key]
-            except KeyError:
-                tags_dict[key] = u''
-        return tags_dict
+        return {key: self[key] for key in EasyTagger.FIELDS}
 
     def set_tags(self, tags_dict):
         self.clean_tags()
