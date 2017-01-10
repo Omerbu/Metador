@@ -199,6 +199,9 @@ class EasyTagger(object):
     def get_cover(self):
         return self.tagger.get_cover()
 
+    def set_cover(self, image_string):
+        self.tagger.set_cover(image_string)
+
     def __getitem__(self, item):
         item = item.title()
         try:
