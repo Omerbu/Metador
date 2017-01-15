@@ -6,6 +6,8 @@ from mutagen.id3 import ID3, ID3NoHeaderError, TPE1, TALB, TIT2, TRCK, TDRC, TCO
 from mutagen.mp4 import MP4, MP4Cover
 from mutagen.apev2 import APEv2, APENoHeaderError
 from mutagen.flac import FLAC, Picture
+from PIL import Image
+from StringIO import StringIO
 
 
 class MP3Tagger(object):
@@ -190,6 +192,16 @@ class EasyTagger(object):
         except KeyError:
             return field
 
+    @staticmethod
+    def as_jpeg(image_string):
+        im = Image.open(StringIO(image_string))
+        if im.format == "JPEG":
+            return image_string
+        out_string_io = StringIO()
+        im.save(out_string_io, "JPEG")
+        jpeg_str = out_string_io.getvalue()
+        return jpeg_str
+
     def get_duration(self, minute_string=True):
         seconds = int(File(self.fname).info.length)
         if minute_string:
@@ -197,9 +209,11 @@ class EasyTagger(object):
         return seconds
 
     def get_cover(self):
-        return self.tagger.get_cover()
+        img_str = self.tagger.get_cover()
+        return EasyTagger.as_jpeg(img_str)
 
     def set_cover(self, image_string):
+        image_string = EasyTagger.as_jpeg(image_string)
         self.tagger.set_cover(image_string)
 
     def __getitem__(self, item):
