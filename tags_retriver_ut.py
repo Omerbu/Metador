@@ -24,4 +24,4 @@ def lastfm_check(artist_name, track_name):
     meta_tags_retriever.lastfm_album_art(artist_name, track_name)
 
 if __name__ == "__main__":
-    lastfm_check("The Civil Wars", "The Civil Wars")
+   integration_check(r"D:\The Music\Ed Sheeran - X\01 - One.flac")

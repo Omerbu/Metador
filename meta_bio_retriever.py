@@ -19,9 +19,12 @@ def lastfm_bio_handler(artist, callback_function):
         parsed_bio = text[:maxchars]
         lastfm_bio_handler.callback(parsed_bio)
 
+    def no_connection(_, error_message):
+        lastfm_bio_handler.callback("No Internet Connection")
+
     url_lastfm = "http://www.last.fm/music/"
     page = artist.replace(" ", "+") + "/+wiki"
     full_address = url_lastfm + page
     lastfm_bio_handler.callback = callback_function
-    url_req = UrlRequest(full_address, on_success=search_lastfm)
+    url_req = UrlRequest(full_address, on_success=search_lastfm, on_error=no_connection)
 

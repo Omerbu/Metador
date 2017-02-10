@@ -3,6 +3,8 @@ import re
 import os
 import os.path
 import scandir
+import tkFileDialog
+import Tkinter
 from io import BytesIO
 from tagging import EasyTagger
 from kivy.core.window import Window
@@ -90,6 +92,17 @@ class TagEditorLayout(BoxLayout):
         self.previous_input_dict = {re.sub("Input", "", key): "" for key in self.input_list}
         self.differentiated_input_dict = dict()
         self.current_tags = dict()
+        self.last_artist = str()
+        self.last_album = str()
+        self.tagger = None
+
+    def check_for_tagger(func):
+        def func_wrapper(*args, **kwargs):
+            if args[0].tagger:
+                results = func(*args, **kwargs)
+                return results
+
+        return func_wrapper
 
     def tags_input(self):
         """
@@ -125,15 +138,20 @@ class TagEditorLayout(BoxLayout):
             tags_dict = self.tagger.get_tags()
             self.previous_input_dict = tags_dict
             self.change_text_boxes(tags_dict)
-            meta_bio_retriever.lastfm_bio_handler(tags_dict["Artist"],
-                                                  self.artist_bio_handler)
+            if self.last_artist != self.tagger["Artist"]:
+                meta_bio_retriever.lastfm_bio_handler(self.tagger["Artist"],
+                                              self.artist_bio_handler)
             self.read_cover_art()
+            self.last_artist = self.tagger["Artist"]
+
         else:
             for input_text in self.input_list:
                 self.ids[input_text].text = str()
                 self.ids[input_text].cursor = (0, 0)  # Resets cursor position.
                 self.ids[input_text].cursor = (len(self.ids[input_text].text), 0)
-
+                self.ids["cover_art"].reload()
+                self.ids['lbl_file'].text = "Artist Biography"
+                self.last_artist = self.last_album = self.tagger = None
 
     def multiple_nodes_handler(self, nodes_list):
         tag_dictionary_list = [EasyTagger(node.path).get_tags() for node
@@ -142,9 +160,16 @@ class TagEditorLayout(BoxLayout):
             first_dictionary = tag_dictionary_list[0]
             combined_dictionary = {key: first_dictionary[key] if all(
                 [comp_dict[key] == first_dictionary[key] for comp_dict
-                in tag_dictionary_list[1:]]) else
+                    in tag_dictionary_list[1:]]) else
                     self.MULTIPLE_TAGS_CONST for key in first_dictionary}
             self.change_text_boxes(combined_dictionary)
+
+            if not all(cmp_dict["Artist"] == first_dictionary["Artist"] for cmp_dict in
+                    tag_dictionary_list[1:]):
+                self.ids['lbl_file'].text = "Artist Biography"
+            if not all(cmp_dict["Album"] == first_dictionary["Album"] for cmp_dict in
+                       tag_dictionary_list[1:]):
+                self.ids['cover_art'].reload()
 
     def change_text_boxes(self, tags_dict):
         for input_text in self.input_list:
@@ -158,8 +183,24 @@ class TagEditorLayout(BoxLayout):
         self.ids['lbl_file'].text = results
 
 
-"""Labels and Buttons:"""
+    @check_for_tagger
+    def remove_cover_art(self):
+        self.tagger.set_cover(str())
+        self.read_cover_art()
 
+    @check_for_tagger
+    def add_cover_art(self):
+        Tkinter.Tk().withdraw()
+        new_art_path = tkFileDialog.askopenfilename()
+        if new_art_path:
+            with open(new_art_path, 'rb') as cover_art_obj:
+                image_string = cover_art_obj.read()
+            self.tagger.set_cover(image_string)
+            self.read_cover_art()
+
+
+
+"""Labels and Buttons:"""
 
 class AlbumLabel(Label):
         icon_src = Image(source="icons\\cd.png",
@@ -184,6 +225,8 @@ class EditorTextInput(TextInput):
             self.underline_color = [0, 1, 1, 1]
         else:
             self.underline_color = [1, 1, 1, .4]
+
+"""Nodes"""
 
 
 class FileNode(BoxLayout, BorderLessNode):
@@ -313,10 +356,18 @@ class DynamicTree(TreeView):
         self.selected_nodes = list()
         self.is_multiple_selection = False
 
-    def ms_clock_on(self, _, touch,):
+    def on_is_multiple_selection(self,_,ms_value):
+        if ms_value:
+            self.selected_nodes.append(self.selected_node)
+
+        else:
+            self.disable_multiple_selection()
+
+
+    def ms_clock_on(self):
         self.ms_event = Clock.schedule_once(self.enable_multiple_selection, .6)
 
-    def ms_clock_off(self, _, touch,):
+    def ms_clock_off(self):
         if self.ms_event:
             Clock.unschedule(self.ms_event)
 
@@ -373,7 +424,10 @@ class DynamicTree(TreeView):
         pass
 
     def on_select(self, node):
-        pass
+        self.ms_clock_on()
+
+    def on_touch_up(self, touch):
+        self.ms_clock_off()
 
     def check_for_directory(self, node):
         """Read the contents of the folder represented by 'node' argument."""
@@ -466,17 +520,10 @@ class SelectedList(DynamicTree):
     def filter_dir_gen(self, path):
         pass
 
-    def on_select(self, node):
-        super(SelectedList, self).on_select(node)
-
     def clear_tree_view(self):
         self.multiple_remove_from_list([node for node in self.iterate_all_nodes()
                                         if not node.text == "Root"])
         self.list_counter = 0
-
-    def clear_selection(self):
-        if self.selected_node:
-            self.selected_node.is_selected = False
 
     def remove_from_list(self, input_node):
         if not input_node:
@@ -520,7 +567,8 @@ class SelectedList(DynamicTree):
             self.remove_from_list(node)
 
     def add_folder_content(self, folder_node):
-        self.explorer_instance.check_for_directory(folder_node)
+        if not folder_node.is_mapped:
+            self.explorer_instance.check_for_directory(folder_node)
         self.multiple_add_to_list(folder_node.nodes)
 
 
@@ -538,9 +586,9 @@ class MetadorGui(App):
         self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
                                               spacing=50, padding=[25, 0, 25, 0])
-        self.editor_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.4)
+        self.center_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.3)
         self.center_layout = CenterLayout(orientation="vertical")
-        self.center_layout.add_widget(self.editor_carousel)
+        self.center_layout.add_widget(self.center_carousel)
         self.tag_editor = TagEditorLayout()
         self.left_layout = LeftLayout()
         self.tree_view_config()
@@ -550,8 +598,8 @@ class MetadorGui(App):
         self.scroll_layout = ScrollView(bar_color=[.4, .6, .65, .35])
         self.scroll_layout.scroll_distance = 50
         self.scroll_layout.add_widget(self.tree_view)
-        self.editor_carousel.add_widget(self.metador_layout)
-        self.editor_carousel.add_widget(self.converter_layout)
+        self.center_carousel.add_widget(self.metador_layout)
+        self.center_carousel.add_widget(self.converter_layout)
         self.left_layout.add_widget(self.scroll_layout)
         self.upper_layout.add_widget(self.left_layout)
         self.upper_layout.add_widget(self.center_layout)
@@ -564,13 +612,10 @@ class MetadorGui(App):
 
     """WIDGETS CONFIG"""
 
-
     def tree_view_config(self):
         """Create and configure file explorer (Tree view)."""
         self.tree_view = DynamicTree(size_hint_y=None, hide_root=True,
                                      indent_level=12)
-        self.tree_view.bind(on_select=self.tree_view.ms_clock_on)
-        self.tree_view.bind(on_touch_up=self.tree_view.ms_clock_off)
         self.tree_view.bind(is_multiple_selection=self.multiple_selection_handler)
         self.tree_view.bind(on_select=self.clear_selection_handler)
         self.tree_view.bind(on_select=self.tag_editor.node_select_handler)
@@ -581,6 +626,7 @@ class MetadorGui(App):
         self.tree_view.id = "tree_view_id"
         self.mapping_event("D:\The Music")
         self.left_layout.ids.filter_carousel.index = 1
+
 
     def lists_config(self):
         self.converter_layout.ids.converter_list.bind(
@@ -608,9 +654,9 @@ class MetadorGui(App):
                                         window_instance.mouse_pos[1]):
             self.drag_modal.dismiss()
             self.mapping_event(drop_file_string)
-        elif self.editor_carousel.collide_point(window_instance.mouse_pos[0],
-                                         window_instance.mouse_pos[1]) and \
-                                        self.editor_carousel.index == 2 and \
+        elif self.center_carousel.collide_point(window_instance.mouse_pos[0],
+                                                window_instance.mouse_pos[1]) and \
+                                        self.center_carousel.index == 2 and \
                                         self.converter_modal.is_open:
 
             self.converter_layout.ids.converter_text_input.text = drop_file_string
@@ -648,7 +694,7 @@ class MetadorGui(App):
         self.tree_generator = self.tree_view.populate_tree_view(path_string)
         self.mapping_schedule = Clock.schedule_interval(mapping_callback, 0)
 
-    def tree_refresh(self,):
+    def tree_refresh(self):
         """Remaps the folder tree with the same root directory."""
         try:
             self.mapping_event(self.tree_view.root_node.path)
@@ -660,11 +706,8 @@ class MetadorGui(App):
         filter_carousel = self.left_layout.ids.filter_carousel
         if ms_value:
             self.change_carousel(filter_carousel, 0)
-            self.tree_view.selected_nodes.append(self.tree_view.selected_node)
-
         else:
             self.change_carousel(filter_carousel, 1)
-            self.tree_view.disable_multiple_selection()
 
     def folder_doubleclick_handler(self, _, node):
         self.mapping_event(node.path)
@@ -673,9 +716,8 @@ class MetadorGui(App):
         parent_path = os.path.split(node.path)[0]
         self.mapping_event(parent_path)
 
-    @time_decorator
     def selected_list_node_add_handler(self, _, node):
-        if self.editor_carousel.index == 1:
+        if self.center_carousel.index == 1:
             self.converter_layout.ids.converter_list.add_to_list(node)
         else:
             self.metador_layout.ids.metador_list.add_to_list(node)
@@ -696,12 +738,12 @@ class MetadorGui(App):
         for node_widget in node_widgets:
             node_widget.clear_selection()
 
-
     def tree_loading_start(self):
         self.app_menu_layout.ids.tree_progress.start_spinning()
 
     def tree_loading_stop(self):
         Clock.schedule_once(self.app_menu_layout.ids.tree_progress.stop_spinning, 1)
+
 
 if __name__ == '__main__':
     MetadorGui().run()

@@ -80,7 +80,7 @@
         size_hint: 1, None
         size:0,36
         Carousel:
-            direction: "bottom"
+            direction: "top"
             scroll_distance:100000000
             scroll_timeout: 10
             anim_move_duration:.3
@@ -160,12 +160,12 @@
             spacing: self.width / 10
             ToggleFlatButton:
                 text: "Metador"
-                on_press:app.change_carousel(app.editor_carousel, 0)
+                on_press:app.change_carousel(app.center_carousel, 0)
                 group: "Converter"
                 state: "down"
             ToggleFlatButton:
                 text: "File Converter"
-                on_press:app.change_carousel(app.editor_carousel, 1)
+                on_press:app.change_carousel(app.center_carousel, 1)
                 group: "Converter"
 
 
@@ -323,9 +323,11 @@
                 orientation: "vertical"
                 FlatButton:
                     text: "Add Cover Art"
+                    on_press: root.add_cover_art()
                 FlatButton:
                     text: "Remove Cover Art"
                     on_release: coverart_carousel.load_previous()
+                    on_press: root.remove_cover_art
                 FlatButton:
                     text: "Cancel"
                     on_release: coverart_carousel.load_previous()
@@ -487,12 +489,21 @@
         size_hint:1,None
         height: 20
         Label:
-            size_hint: .4,1
             text: "Name"
+            size_hint: None,1
+            width: 50
         FloatLayout:
         Label:
-            size_hint: .25,1
+            size_hint: None,1
+            width: 60
             text: "Size"
+        FloatLayout:
+            size_hint: None,1
+            width: 1
+        Label:
+            size_hint: None,1
+            width: 50
+            text: "Length"
     SpacedHoLine:
     ScrollView:
         scroll_distance: 30
@@ -661,7 +672,7 @@
             source: "icons\\music_cover.png"
         Label:
             size_hint:(1,0.1)
-            text: "Version 0.1 Pre-Alpha"
+            text: "Version 0.3 Pre-Alpha"
             font_size: 13
         BoxLayout:
             spacing: 3
