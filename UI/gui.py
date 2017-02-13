@@ -185,14 +185,16 @@ class TagEditorLayout(BoxLayout):
 
     @check_for_tagger
     def remove_cover_art(self):
-        self.tagger.set_cover(str())
+        self.tagger["coverart"] = str()
         self.read_cover_art()
 
     @check_for_tagger
     def add_cover_art(self):
+        """ WIP! Design TBD"""
         Tkinter.Tk().withdraw()
         new_art_path = tkFileDialog.askopenfilename()
         if new_art_path:
+            print new_art_path
             with open(new_art_path, 'rb') as cover_art_obj:
                 image_string = cover_art_obj.read()
             self.tagger.set_cover(image_string)
@@ -239,7 +241,7 @@ class FileNode(BoxLayout, BorderLessNode):
     text = StringProperty("")
     color_selected_ms = [0, .8, .9, .2]
     is_ms = BooleanProperty(False)
-    color_selected = [.0, .0, .0, .03]
+    color_selected = [.5, .5, .85, .08]
     even_color = [.5, .5, .5, 0]
 
 
@@ -257,8 +259,8 @@ class FolderNode(BoxLayout, BorderLessNode):
     is_sub_nodes = BooleanProperty(False)
     node_type = StringProperty("Folder")
     text = StringProperty("")
-    color_selected = [.0, .0, .0, .03]
-    color_selected_ms = [0, .8, .9, .2]
+    color_selected = [.5, .5, .85, .08]
+    color_selected_ms = [0, 1, 1, .15]
     folder_color_sub_nodes = [0, 1, 1, 1]
     folder_icon_color = [.6, .75, .8, 0.5]
     is_sub_nodes = BooleanProperty(False)
@@ -292,10 +294,6 @@ class BaseModal(ModalView):
 
     def on_dismiss(self):
         self.is_open = False
-
-
-class DragModal(BaseModal):
-    pass
 
 
 class AboutModal(BaseModal):
@@ -535,41 +533,63 @@ class SelectedList(DynamicTree):
                 self.remove_node(to_remove_node)
                 self.list_counter -= 1
 
-    def add_to_list(self, input_node):
-        if not input_node:
+    def add_to_list(self, node_list):
+        def mapping_callback(dt):
+            try:
+                self.add_generator.next()
+            except StopIteration:
+                self.adding_schedule.cancel()
+
+        self.add_generator = self.adding_generator(node_list)
+        self.adding_schedule = Clock.schedule_interval(mapping_callback, 0)
+
+    def adding_generator(self, input_list_node):
+        nodes_list = list()
+        if not input_list_node:
             return
         try:
-            iter_test = iter(input_node)
-            self.multiple_add_to_list(input_node)
-            return
+            _ = iter(input_list_node)
+            for node in input_list_node:
+                if node.node_type == "Folder":
+                    self.folder_building(node)
+                    nodes_list += self.folder_reader(node)
+                    yield
+                else:
+                    nodes_list.append(node)
         except TypeError:
-            pass
-        if input_node.node_type == "Folder":
-            self.add_folder_content(input_node)
-        else:
-            self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
-                              not sub_node.text == "Root"]
+            nodes_list.append(input_list_node)
+
+        self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
+                          not sub_node.text == "Root"]
+        yield
+        for node in nodes_list:
             self.node_path_list = [n_path.path for n_path in self.node_list]
-            if input_node.path not in self.node_path_list:
-                input_node_duration = EasyTagger(input_node.path).get_duration()
-                self.add_node(ListNode(path=input_node.path,
-                                       text=input_node.text,
-                                       file_size=input_node.file_size,
+            if node.path not in self.node_path_list:
+                input_node_duration = EasyTagger(node.path).get_duration()
+                self.add_node(ListNode(path=node.path,
+                                       text=node.text,
+                                       file_size=node.file_size,
                                        file_duration=input_node_duration))
+                yield
                 self.list_counter += 1
 
-    def multiple_add_to_list(self, node_list):
-        for node in node_list:
-            self.add_to_list(node)
+    def folder_building(self, folder_node):
+
+        if not folder_node.is_mapped:
+            self.explorer_instance.check_for_directory(folder_node)
+        for folder_sub_node in [node for node in folder_node.nodes
+                                 if node.node_type == "Folder"]:
+            self.folder_building(folder_sub_node)
+
+    def folder_reader(self, folder_node):
+        return [node for node in
+                self.explorer_instance.iterate_all_nodes(folder_node)
+                if node.node_type == "File"]
 
     def multiple_remove_from_list(self, node_list):
         for node in node_list:
             self.remove_from_list(node)
 
-    def add_folder_content(self, folder_node):
-        if not folder_node.is_mapped:
-            self.explorer_instance.check_for_directory(folder_node)
-        self.multiple_add_to_list(folder_node.nodes)
 
 
 class MetadorGui(App):
@@ -627,7 +647,6 @@ class MetadorGui(App):
         self.mapping_event("D:\The Music")
         self.left_layout.ids.filter_carousel.index = 1
 
-
     def lists_config(self):
         self.converter_layout.ids.converter_list.bind(
             on_select=self.clear_selection_handler)
@@ -640,10 +659,6 @@ class MetadorGui(App):
 
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
-        self.drag_modal = DragModal(pos_hint={"x": 0, "y": 0.5})
-        self.drag_modal.children[0].text = "Drag Here Your Music Folder"
-        self.converter_modal = DragModal(pos_hint={"x": 0.36, "y": 0.5})
-        self.converter_modal.children[0].text = "Drag Here Your Destination Folder"
         self.about_modal = AboutModal()
 
     """APP EVENTS"""
@@ -652,15 +667,17 @@ class MetadorGui(App):
 
         if self.scroll_layout.collide_point(window_instance.mouse_pos[0],
                                         window_instance.mouse_pos[1]):
-            self.drag_modal.dismiss()
             self.mapping_event(drop_file_string)
-        elif self.center_carousel.collide_point(window_instance.mouse_pos[0],
-                                                window_instance.mouse_pos[1]) and \
-                                        self.center_carousel.index == 2 and \
-                                        self.converter_modal.is_open:
 
-            self.converter_layout.ids.converter_text_input.text = drop_file_string
-            self.converter_modal.dismiss()
+    def change_explorer(self):
+        Tkinter.Tk().withdraw()
+        new_explorer_path = tkFileDialog.askdirectory()
+        self.mapping_event(new_explorer_path)
+
+    def change_dest_folder(self):
+        Tkinter.Tk().withdraw()
+        new_dest_path = tkFileDialog.askdirectory()
+        self.converter_layout.ids.converter_text_input.text = new_dest_path
 
     @staticmethod
     def change_carousel(carousel, slide_num):

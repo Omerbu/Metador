@@ -95,12 +95,13 @@
                     on_press: print app.tree_view.selected_nodes
                 FlatButton:
                     text: "%s  Add"%(icon.icon('fa-arrow-right',16,self.icon_color))
-                    on_release: app.selected_list_node_add_handler(None,app.tree_view.selected_nodes)
+                    on_press: app.selected_list_node_add_handler(None,app.tree_view.selected_nodes)
+                    on_release: app.tree_view.clear_selection()
             BoxLayout:
                 spacing: self.width / 9
                 FlatButton:
                     text:"%s  Change"%(icon.icon('fa-folder',16,self.icon_color))
-                    on_press: app.drag_modal.open()
+                    on_press: app.change_explorer()
                 FlatButton:
                     text:"%s  Refresh"%(icon.icon('fa-refresh',16,self.icon_color))
                     on_press: app.tree_refresh()
@@ -532,7 +533,7 @@
             size_hint: 0.1,0.98
             markup: True
             text: "%s"%(icon.icon('fa-folder',16,self.icon_color))
-            on_press: app.converter_modal.open()
+            on_press: app.change_dest_folder()
     SpacingLayout:
     SpacedHoLine:
     SpacingLayout:
@@ -609,15 +610,6 @@
         FlatButton:
             text: "%s  Settings"%(icon.icon("fa-cogs",16,self.icon_color))
 
-<DragModal>:
-    opacity: .01
-    size_hint: (0.3, 0.1)
-    background_color:[0,0,0,45]
-    Label:
-        opacity: 100
-        text:
-
-
 <AppMenuLayout>:
     size_hint:1,None
     size: 0,38
@@ -630,6 +622,7 @@
     FlatButton:
         text: "%s"%(icon.icon('fa-bars',17,self.icon_color))
         size_hint:.05,1
+        on_press: print app.about_modal.size
     Label:
         text: "Metador"
         font_size: 21
@@ -656,6 +649,7 @@
 
 <AboutModal>:
     background_color:[0,0,0,0.4]
+    background: "icons\\tran_back.png"
     size_hint: None,None
     padding: 15,15
     size: 300,350
@@ -669,7 +663,7 @@
             font_size: 16
         Image:
             mipmap:True
-            source: "icons\\music_cover.png"
+            source: "icons\\cd.png"
         Label:
             size_hint:(1,0.1)
             text: "Version 0.3 Pre-Alpha"
@@ -679,7 +673,7 @@
             orientation: "vertical"
             Label:
                 font_size: 16
-                text:"Creators:"
+                text:"Developers:"
                 bold:True
             Label:
                 text:'Gil "Marlo" Harari'

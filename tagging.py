@@ -194,6 +194,8 @@ class EasyTagger(object):
 
     @staticmethod
     def as_jpeg(image_string):
+        if not image_string:
+            return
         im = Image.open(StringIO(image_string))
         if im.format == "JPEG":
             return image_string
