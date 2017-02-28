@@ -1,6 +1,6 @@
 #:kivy 1.9.1
 #:import webbrowser webbrowser
-#:import icon iconfonts
+#:import icon ui.iconfonts
 
 <RootLayout>:
     padding:[0,0,0,20]
@@ -100,7 +100,7 @@
             BoxLayout:
                 spacing: self.width / 9
                 FlatButton:
-                    text:"%s  Change"%(icon.icon('fa-folder',16,self.icon_color))
+                    text:"%s  Open"%(icon.icon('fa-folder',16,self.icon_color))
                     on_press: app.change_explorer()
                 FlatButton:
                     text:"%s  Refresh"%(icon.icon('fa-refresh',16,self.icon_color))
@@ -622,7 +622,7 @@
     FlatButton:
         text: "%s"%(icon.icon('fa-bars',17,self.icon_color))
         size_hint:.05,1
-        on_press: print app.about_modal.size
+        on_press: print app.root_layout.size
     Label:
         text: "Metador"
         font_size: 21
@@ -649,7 +649,7 @@
 
 <AboutModal>:
     background_color:[0,0,0,0.4]
-    background: "icons\\tran_back.png"
+    background: "res\\images\\tran_back.png"
     size_hint: None,None
     padding: 15,15
     size: 300,350
@@ -663,7 +663,7 @@
             font_size: 16
         Image:
             mipmap:True
-            source: "icons\\cd.png"
+            source: "res\\icons\\cd.png"
         Label:
             size_hint:(1,0.1)
             text: "Version 0.3 Pre-Alpha"
@@ -702,3 +702,35 @@
                 on_ref_press:webbrowser.open("https://github.com/cweichen/pygn")
 
 
+<SettingsModal>:
+    background_color:[0,0,0,0.4]
+    padding: 15,15
+    size_hint: None,None
+    size: 400,550
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text: "Settings"
+            size_hint: 1,0.2
+            font_size: 18
+        BoxLayout:
+            BoxLayout:
+                orientation: "vertical"
+                size_hint: 0.3,1
+                CheckBox:
+                CheckBox:
+                CheckBox:
+            BoxLayout:
+                orientation: "vertical"
+                Label:
+                    text:"Auto-Tag All Songs"
+                Label:
+                    text: "Auto Rename by Tags"
+                Label:
+                    text: "Auto sort in Folders"
+        BoxLayout:
+            size_hint: 1,0.1
+            FlatButton:
+                text: "Cancel"
+            FlatButton:
+                text: "Confirm"

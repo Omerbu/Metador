@@ -9,7 +9,6 @@ from kivy.uix.togglebutton import ToggleButtonBehavior
 from kivy.uix.image import Image
 from kivy.core.image import Image as CoreImage
 from kivy.resources import resource_find
-from kivy.logger import Logger
 
 """Color Buttons"""
 
@@ -42,7 +41,7 @@ class CoverArtImage(ButtonBehavior, Image):
 
     def __init__(self, **kwargs):
         super(CoverArtImage, self).__init__(**kwargs)
-        self.source = "icons\\cover_art.jpg"
+        self.source = "res\\images\\cover_art.jpg"
         self.mipmap = True
 
 
@@ -248,5 +247,4 @@ class AnimatedBoxLayout(BoxLayout):
                 y += h + spacing
 
 
-class BorderLessNode(TreeViewNode):
-    """Tree View Node without annoying borders"""
+
