@@ -3,7 +3,7 @@
 import meta_tags_retriever
 import metacore
 import meta_result_parser
-from meta_utils import time_decorator
+from utils import time_decorator
 
 
 @time_decorator

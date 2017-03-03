@@ -33,7 +33,7 @@ class FlatButton(SimpleTransparentButton):
             self.underline_color = [0, 1, 1, 1]
             self.icon_color = "00ffff"
         else:
-            self.underline_color = [1, 1, 1, 0]
+            self.underline_color = [0, 1, 1, 0]
             self.icon_color = "5c7f8a"
 
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from bs4 import BeautifulSoup
-import urllib2
 from kivy.network.urlrequest import UrlRequest
 
 
@@ -22,9 +21,13 @@ def lastfm_bio_handler(artist, callback_function):
     def no_connection(_, error_message):
         lastfm_bio_handler.callback("No Internet Connection")
 
+    def debug(_, error_message):
+        lastfm_bio_handler.callback("Debug")
+
     url_lastfm = "http://www.last.fm/music/"
     page = artist.replace(" ", "+") + "/+wiki"
     full_address = url_lastfm + page
     lastfm_bio_handler.callback = callback_function
-    url_req = UrlRequest(full_address, on_success=search_lastfm, on_error=no_connection)
+    url_req = UrlRequest(full_address, on_success=search_lastfm, on_error=no_connection,
+                         on_redirect=debug)
 

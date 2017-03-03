@@ -6,7 +6,7 @@ import urllib
 import discogs_client
 from bs4 import BeautifulSoup
 import pylast
-from meta_utils import time_decorator
+from utils import time_decorator
 
 # GraceNote API keys:
 pygn_userID = "27962471776224303-FF72AD796AB3BFD8639F5455B63BD7EE"

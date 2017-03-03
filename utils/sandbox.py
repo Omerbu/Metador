@@ -4,7 +4,7 @@ from __future__ import print_function
 import sys
 import mr_acoustid
 import json
-from meta_utils import FuncTimeitWrapper
+from utils import FuncTimeitWrapper
 
 API_KEY = 'JKMQc1GXqS'
 

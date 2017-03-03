@@ -1,9 +1,9 @@
 from kivy.uix.boxlayout import BoxLayout
-from gui_classes import AnimatedBoxLayout
+from base_classes import AnimatedBoxLayout
 from utils.tagging import EasyTagger
 from kivy.uix.image import Image
 import re
-from utils import meta_bio_retriever
+from utils import bio_retriever
 from kivy.core.image import Image as CoreImage
 from io import BytesIO
 import Tkinter
@@ -105,8 +105,8 @@ class TagEditorLayout(BoxLayout):
             self.previous_input_dict = tags_dict
             self.change_text_boxes(tags_dict)
             if self.last_artist != self.tagger["Artist"]:
-                meta_bio_retriever.lastfm_bio_handler(self.tagger["Artist"],
-                                              self.artist_bio_handler)
+                bio_retriever.lastfm_bio_handler(self.tagger["Artist"],
+                                                 self.artist_bio_handler)
             self.read_cover_art()
             self.last_artist = self.tagger["Artist"]
 

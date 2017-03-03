@@ -7,7 +7,7 @@
     spacing: 15
     canvas:
         Color:
-            rgba:.95,.95,1,.5
+            rgba:.95,.95,1,.6
         Rectangle:
             texture: self.back_texture.texture
             pos:self.pos
@@ -235,6 +235,8 @@
 <FolderNode>:
     height:node_label.size[1]
     padding: 5,0
+    droppable_zone_objects:[app.center_layout,]
+    drop_func: self.debug
     Label:
         padding_y: 5
         size: root.width,self.texture_size[1] + 8
@@ -485,6 +487,14 @@
                     text: "MP3"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
+    BoxLayout:
+        size_hint: 1,0.07
+        spacing: self.width / 1.20
+        FlatButton:
+            text: "%s"%(icon.icon("fa-remove",18,self.icon_color))
+            on_press: converter_list.clear_tree_view()
+        FlatButton:
+            text: "%s"%(icon.icon("fa-bar-chart",18,self.icon_color))
     SpacingLayout:
     BoxLayout:
         size_hint:1,None
@@ -542,11 +552,6 @@
         size_hint: 1,None
         size: 0,36
         FlatButton:
-            text: "%s  Clear"%(icon.icon("fa-remove",16,self.icon_color))
-            on_press: converter_list.clear_tree_view()
-        FlatButton:
-            text: "%s  Bitrate"%(icon.icon("fa-bar-chart",16,self.icon_color))
-        FlatButton:
             size_hint: 1,None
             height: 36
             text: "%s  Convert"%(icon.icon("fa-check",16,self.icon_color))
@@ -558,6 +563,14 @@
     spacing: 0
     orientation: "vertical"
     SpacingLayout:
+    BoxLayout:
+        size_hint: 1,0.07
+        spacing: self.width / 1.20
+        FlatButton:
+            text: "%s"%(icon.icon("fa-times",18,self.icon_color))
+            on_press:metador_list.clear_tree_view()
+        FlatButton:
+            text: "%s"%(icon.icon("fa-cogs",18,self.icon_color))
     BoxLayout:
         size_hint:1,None
         height: 20
@@ -597,18 +610,16 @@
     SpacedHoLine:
     SpacingLayout:
     BoxLayout:
-        spacing: self.width / 10
+        padding: [100,0,100,0]
         size_hint: 1, None
         size: 0,36
         orientation: "horizontal"
         FlatButton:
-            text: "%s  Clear"%(icon.icon("fa-times",16,self.icon_color))
-            on_press:metador_list.clear_tree_view()
-        FlatButton:
-            text: "%s  Metador!"%(icon.icon("fa-music",16,self.icon_color))
+            bold: True
+            font_size: 18
+            text: "%s   Metador"%(icon.icon("fa-music",18,self.icon_color))
             markup: True
-        FlatButton:
-            text: "%s  Settings"%(icon.icon("fa-cogs",16,self.icon_color))
+
 
 <AppMenuLayout>:
     size_hint:1,None

@@ -19,28 +19,20 @@ from kivy.properties import StringProperty, BooleanProperty, ListProperty, \
                             ObjectProperty, NumericProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
-from gui_classes import AnimatedBoxLayout,\
+from base_classes import AnimatedBoxLayout,\
                         ToggleFlatButton, FlatButton, CoverArtImage
 from progressspiner import ProgressSpinner
 from layouts import *
 from containers import *
 from nodes import *
-
+from modals import *
 
 """Config """
 Config.set('kivy', 'desktop', '1')
 
 
-"""EXPERIMENTAL WIDGETS:"""
-
-
-"""Layouts:"""
-
-
-
-
-
 """Labels and Buttons:"""
+
 
 class AlbumLabel(Label):
         icon_src = Image(source=r"res\icons\cd.png",
@@ -66,38 +58,6 @@ class EditorTextInput(TextInput):
         else:
             self.underline_color = [1, 1, 1, .4]
 
-"""Nodes"""
-
-
-
-
-
-"""APP MENU ELEMENTS:"""
-
-
-"""COMPLEX GUI OBJECTS:"""
-
-
-class BaseModal(ModalView):
-
-    is_open = BooleanProperty(False)
-
-    def on_open(self):
-        self.is_open = True
-
-    def on_dismiss(self):
-        self.is_open = False
-
-
-class AboutModal(BaseModal):
-    pass
-
-
-class SettingsModal(BaseModal):
-    pass
-
-
-
 
 class MetadorGui(App):
 
@@ -121,7 +81,7 @@ class MetadorGui(App):
         self.metador_layout = MetadorLayout()
         self.lists_config()
         self.scroll_layout = ScrollView(bar_color=[.4, .6, .65, .35])
-        self.scroll_layout.scroll_distance = 50
+        self.scroll_layout.scroll_distance = 60
         self.scroll_layout.add_widget(self.tree_view)
         self.center_carousel.add_widget(self.metador_layout)
         self.center_carousel.add_widget(self.converter_layout)
@@ -267,5 +227,3 @@ class MetadorGui(App):
     def tree_loading_stop(self):
         Clock.schedule_once(self.app_menu_layout.ids.tree_progress.stop_spinning, 1)
 
-if __name__ == '__main__':
-    MetadorGui().run()
