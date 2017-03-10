@@ -24,8 +24,7 @@ class BaseNode(BorderLessNode):
 
 
 class FileNode(BoxLayout, BaseNode):
-    file_icon = Image(source=r"C:\Users\Dell\PycharmProjects\Metador"
-                             r"\res\icons\\file_icon_white.png",
+    file_icon = Image(source=r"res\icons\\file_icon_white.png",
                       mipmap=True)
     node_type = StringProperty("File")
     file_size = StringProperty("")
@@ -37,8 +36,7 @@ class ListNode(FileNode):
 
 
 class FolderNode(BoxLayout, BaseNode):
-    file_icon = Image(source=r"C:\Users\Dell\PycharmProjects\Metador"
-                             r"\res\icons\grey_folder.png",
+    file_icon = Image(source=r"res\icons\grey_folder.png",
                       mipmap=True)
     is_sub_nodes = BooleanProperty(False)
     node_type = StringProperty("Folder")

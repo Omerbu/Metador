@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import os.path
+import json
 import Tkinter
 import tkFileDialog
-from io import BytesIO
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.config import Config
@@ -11,12 +11,11 @@ from kivy.app import App
 from kivy.graphics.texture import Texture
 from kivy.graphics import Rectangle
 from kivy.uix.carousel import Carousel
-from kivy.uix.modalview import ModalView
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.checkbox import CheckBox
 from kivy.properties import StringProperty, BooleanProperty, ListProperty, \
-                            ObjectProperty, NumericProperty
+                            ObjectProperty, NumericProperty,ReferenceListProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from base_classes import AnimatedBoxLayout,\
@@ -48,27 +47,26 @@ class EditorLabel(Label):
     """Label Class for editor text input icons."""
 
 
-class EditorTextInput(TextInput):
-
-    underline_color = ListProperty([1, 1, 1, .4])
-
-    def on_focus(self, _, enter_focus):
-        if enter_focus:
-            self.underline_color = [0, 1, 1, 1]
-        else:
-            self.underline_color = [1, 1, 1, .4]
+class TreeScroll(ScrollView):
+    pass
 
 
 class MetadorGui(App):
+
+    THEME_JSON = "res\\themes.json"
+    icon_color_rgba = ListProperty()
+    underline_color = ListProperty()
+    icon_color_hex = StringProperty("")
+    pressed_icon_color = StringProperty("")
 
     def build(self):
         Window.bind(on_dropfile=self.drop_file_event_handler)
         Window.size = (1350, 850)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.icon = r"res\icons\music_cover.png"
-        self.skin_config()
         self.app_menu_layout = AppMenuLayout()
         self.root_layout = RootLayout(orientation="vertical")
+        self.skin_config()
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
                                               spacing=50, padding=[25, 0, 25, 0])
         self.center_carousel = Carousel(scroll_timeout=-1, anim_move_duration=.3)
@@ -81,7 +79,7 @@ class MetadorGui(App):
         self.converter_layout = ConverterLayout()
         self.metador_layout = MetadorLayout()
         self.lists_config()
-        self.scroll_layout = ScrollView(bar_color=[.4, .6, .65, .35])
+        self.scroll_layout = TreeScroll()
         self.scroll_layout.scroll_distance = 60
         self.scroll_layout.add_widget(self.tree_view)
         self.center_carousel.add_widget(self.metador_layout)
@@ -95,16 +93,20 @@ class MetadorGui(App):
 
         return self.root_layout
 
-
     """WIDGETS CONFIG"""
 
     def skin_config(self):
-        # self.icon_color_hex = "5c7f8a"
-        self.icon_color_hex = "ffad33"
-        self.pressed_icon_color = "ff3300"
-        # self.icon_color_rgba = [.6, .75, .8, 0.6]
-        self.icon_color_rgba = [1, .75, .24, 1]
-        self.underline_color = [1, 0, 0, 1]
+        self.load_theme("Jupiter")
+
+    def load_theme(self, theme):
+        with open(self.THEME_JSON) as theme_file:
+            t_dict = json.load(theme_file)
+        self.icon_color_rgba = t_dict[theme]["MainColorRGBA"]
+        self.icon_color_hex = t_dict[theme]["MainColorHex"]
+        self.pressed_icon_color = t_dict[theme]["PressedColor"]
+        self.underline_color = t_dict[theme]["UnderLineColor"]
+        self.root_layout.back_texture.source = t_dict[theme]["Background"]
+        self.root_layout.tint = t_dict[theme]["Tint"]
 
     def tree_view_config(self):
         """Create and configure file explorer (Tree view)."""
@@ -137,6 +139,9 @@ class MetadorGui(App):
         self.settings_modal = SettingsModal()
 
     """APP EVENTS"""
+
+    def debug_skin(self):
+       self.load_theme("Pacific")
 
     def drop_file_event_handler(self, window_instance, drop_file_string):
 

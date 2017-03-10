@@ -18,4 +18,22 @@ class AboutModal(BaseModal):
 
 
 class SettingsModal(BaseModal):
-    pass
+    example_dict = {"[Title]": "Epitaph",
+                    "[Album]": "The Snow Goose",
+                    "[Artist]": "Camel",
+                    "[Track]": "13",
+                    "[Year]": "1975"}
+
+    def add_to_format(self, input_string):
+        self.ids["sorting_text_input"].text += "[{}] ".format(input_string)
+
+    def update_example(self):
+        self.example_text = str()
+        self.new_text = self.ids["sorting_text_input"].text
+        self.new_text = self.new_text.split()
+        for word in self.new_text:
+            try:
+                self.example_text += "{} - ".format(self.example_dict[word])
+            except KeyError:
+                self.example_text += word
+        self.ids["example_label"].text = self.example_text

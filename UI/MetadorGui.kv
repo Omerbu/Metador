@@ -5,9 +5,10 @@
 <RootLayout>:
     padding:[0,0,0,20]
     spacing: 15
+    image:
     canvas:
         Color:
-            rgba: 1,1,1,.65
+            rgba: 1,1,1,self.tint
         Rectangle:
             texture: self.back_texture.texture
             pos:self.pos
@@ -74,6 +75,10 @@
 <FilterCheckBox@CheckBox>:
     active: True
     ext: ""
+    color: [1,1,0,1]
+
+<TreeScroll>:
+    bar_color: app.underline_color
 
 <LeftLayout>:
     spacing: 2
@@ -299,9 +304,10 @@
     use_bubble: False
     hint_text_color: [.6, .7, .7, 0.7]
     text: ""
-    cursor_color: .4, .8, .8, 1
+    cursor_color: app.underline_color
     background_color: [0 ,0.1, .1,0]
     foreground_color: .9,.9,.9,1
+    focus_under_color: app.underline_color
     canvas.after:
         Color:
             rgba: self.underline_color
@@ -448,9 +454,54 @@
         #font_size: 17
         #bold:True
     SpacingLayout:
+    BoxLayout:
+        size_hint: 1,0.07
+        spacing: self.width / 1.20
+        FlatButton:
+            text: "%s"%(icon.icon("fa-remove",20,self.icon_color))
+            on_press: converter_list.clear_tree_view()
+        FlatButton:
+            text: "%s"%(icon.icon("fa-bar-chart",20,self.icon_color))
+    BoxLayout:
+        size_hint:1,None
+        height: 20
+        Label:
+            text: "Name"
+            size_hint: None,1
+            width: 50
+        FloatLayout:
+        Label:
+            size_hint: None,1
+            width: 60
+            text: "Size"
+        FloatLayout:
+            size_hint: None,1
+            width: 1
+        Label:
+            size_hint: None,1
+            width: 50
+            text: "Length"
+    SpacedHoLine:
+    ScrollView:
+        scroll_distance: 30
+        SelectedList:
+            explorer_instance: app.tree_view
+            id: converter_list
+            size_hint_y:None
+            hide_root: True
+            on_file_doubleclick: self.remove_from_list(self.selected_node)
+            height: self.minimum_height
+    HoLine:
+    Label:
+        text_size: self.size
+        halign: "left"
+        size_hint:1,None
+        height:30
+        text: "  {} Songs".format(converter_list.list_counter)
+    SpacingLayout:
     AnimatedBoxLayout:
         size_hint: 1,None
-        size: 0,30
+        size: 0,35
         Carousel:
             direction: "bottom"
             scroll_distance:100000000
@@ -492,50 +543,7 @@
                     text: "MP3"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
-    BoxLayout:
-        size_hint: 1,0.09
-        spacing: self.width / 3
-        FlatButton:
-            text: "%s"%(icon.icon("fa-remove",22,self.icon_color))
-            on_press: converter_list.clear_tree_view()
-        FlatButton:
-            text: "%s"%(icon.icon("fa-bar-chart",22,self.icon_color))
-    BoxLayout:
-        size_hint:1,None
-        height: 20
-        Label:
-            text: "Name"
-            size_hint: None,1
-            width: 50
-        FloatLayout:
-        Label:
-            size_hint: None,1
-            width: 60
-            text: "Size"
-        FloatLayout:
-            size_hint: None,1
-            width: 1
-        Label:
-            size_hint: None,1
-            width: 50
-            text: "Length"
-    SpacedHoLine:
-    ScrollView:
-        scroll_distance: 30
-        SelectedList:
-            explorer_instance: app.tree_view
-            id: converter_list
-            size_hint_y:None
-            hide_root: True
-            on_file_doubleclick: self.remove_from_list(self.selected_node)
-            height: self.minimum_height
     SpacingLayout:
-    Label:
-        text_size: self.size
-        halign: "left"
-        size_hint:1,None
-        height:40
-        text: "  {} Songs".format(converter_list.list_counter)
     BoxLayout:
         spacing: 10
         size_hint: 1,None
@@ -571,10 +579,11 @@
         size_hint: 1,0.07
         spacing: self.width / 1.20
         FlatButton:
-            text: "%s"%(icon.icon("fa-times",18,self.icon_color))
+            text: "%s"%(icon.icon("fa-times",20,self.icon_color))
             on_press:metador_list.clear_tree_view()
         FlatButton:
-            text: "%s"%(icon.icon("fa-cogs",18,self.icon_color))
+            text: "%s"%(icon.icon("fa-cogs",20,self.icon_color))
+            on_release: app.settings_modal.open()
     BoxLayout:
         size_hint:1,None
         height: 20
@@ -637,7 +646,7 @@
     FlatButton:
         text: "%s"%(icon.icon('fa-bars',17,self.icon_color))
         size_hint:.05,1
-        on_press: print app.root_layout.size
+        on_press: app.debug_skin()
     Label:
         text: "Metador"
         font_size: 21
@@ -654,7 +663,7 @@
         size_hint: None,None
         stroke_width: 1.1
         size: 20,40
-        color:  .3, .9, .9, 1
+        color:  app.underline_color
         id: tree_progress
         auto_start: False
         speed:2
@@ -663,11 +672,17 @@
 
 
 <AboutModal>:
-    background_color:[0,0,0,0.4]
-    background: "res\\images\\tran_back.png"
+    background_color:[0,0,0,0.7]
+    background: r"res\images\tran_back.png"
     size_hint: None,None
-    padding: 15,15
-    size: 300,350
+    padding: 10
+    size: 300,400
+    canvas:
+        Color:
+            rgba: .26,.26,.26,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
     BoxLayout:
         spacing: 5
         orientation:"vertical"
@@ -717,35 +732,63 @@
                 on_ref_press:webbrowser.open("https://github.com/cweichen/pygn")
 
 
+
 <SettingsModal>:
-    background_color:[0,0,0,0.4]
-    padding: 15,15
+    background_color:[0,0,0,0.7]
+    background: r"res\images\tran_back.png"
     size_hint: None,None
-    size: 400,550
+    size: 400,500
+    canvas:
+        Color:
+            rgba: .26,.26,.26,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
     BoxLayout:
         orientation: "vertical"
         Label:
-            text: "Settings"
-            size_hint: 1,0.2
-            font_size: 18
+            text: "File Naming Format:"
+            bold: True
+            size_hint: 1,0.7
+            font_size: 17
+            canvas.before:
+                Color:
+                    rgba: app.icon_color_rgba
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
         BoxLayout:
-            BoxLayout:
-                orientation: "vertical"
-                size_hint: 0.3,1
-                CheckBox:
-                CheckBox:
-                CheckBox:
-            BoxLayout:
-                orientation: "vertical"
-                Label:
-                    text:"Auto-Tag All Songs"
-                Label:
-                    text: "Auto Rename by Tags"
-                Label:
-                    text: "Auto sort in Folders"
+            TransparentButton:
+                text: "Track"
+                on_release: root.add_to_format(self.text)
+            TransparentButton:
+                text: "Title"
+                on_release: root.add_to_format(self.text)
+            TransparentButton:
+                text: "Artist"
+                on_release: root.add_to_format(self.text)
+            TransparentButton:
+                text: "Album"
+                on_release: root.add_to_format(self.text)
+            TransparentButton:
+                text: "Year"
+                on_release: root.add_to_format(self.text)
         BoxLayout:
-            size_hint: 1,0.1
+            padding: 10
+            size_hint: 1,1
+            EditorTextInput:
+                id: sorting_text_input
+                on_text: root.update_example()
             FlatButton:
-                text: "Cancel"
-            FlatButton:
-                text: "Confirm"
+                size_hint: .1,1
+                text: "%s"%(icon.icon("fa-remove",16,self.icon_color))
+                on_release: sorting_text_input.text = ""
+        Label:
+            text: "Example:"
+            size_hint: 1,0.6
+        Label:
+            id: example_label
+
+        BoxLayout:
+            size_hint: 1,5

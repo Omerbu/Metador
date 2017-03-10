@@ -1,0 +1,33 @@
+{
+  "Jupiter":
+  {
+      "Background": "res\\images\\gradient_red.jpg",
+      "MainColorRGBA": [1,0.75,0.24,1],
+      "UnderLineColor":[1,0.75,0.24,1],
+      "MainColorHex": "ffad33",
+      "PressedColor": "FF9800",
+      "Tint": 0.65
+    },
+
+
+  "Pacific":
+    {
+      "Background": "res\\images\\blur_blue.jpg",
+      "MainColorRGBA": [0.1, 0.72, 0.9, 0.6],
+      "UnderLineColor":[0,1,1,1],
+      "MainColorHex": "00b8e6",
+      "PressedColor": "66ffff",
+      "Tint": 0.65
+    },
+
+  "Carbon":
+    {
+      "Background": "res\\images\\carbon.png",
+      "MainColorRGBA": [0.9, 0.1, 0.1, 1],
+      "UnderLineColor":[1,0,0, 1],
+      "MainColorHex": "cc0000",
+      "PressedColor": "ff0000",
+      "Tint": 1
+    }
+
+}

@@ -2,6 +2,7 @@ from kivy.uix.boxlayout import BoxLayout
 from base_classes import AnimatedBoxLayout
 from utils.tagging import EasyTagger
 from kivy.uix.image import Image
+from kivy.properties import NumericProperty
 import re
 from utils import bio_retriever
 from kivy.core.image import Image as CoreImage
@@ -11,10 +12,9 @@ import tkFileDialog
 
 
 class RootLayout(BoxLayout):
-    back_texture = Image(source=r"C:\Users\Dell\PycharmProjects\Metador"
-                                r"\res\images\gradient_red.jpg",
+    back_texture = Image(source=r"res\images\gradient_red.jpg",
                         mipmap=True)
-
+    tint = NumericProperty(0.65)
 
 class AppMenuLayout(BoxLayout):
     pass

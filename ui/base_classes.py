@@ -5,6 +5,7 @@ from kivy.properties import BooleanProperty, ObjectProperty, \
 from kivy.core.window import Window
 from kivy.uix.button import Button, ButtonBehavior
 from kivy.uix.treeview import TreeViewNode
+from kivy.uix.textinput import TextInput
 from kivy.uix.togglebutton import ToggleButtonBehavior
 from kivy.uix.image import Image
 from kivy.core.image import Image as CoreImage
@@ -65,7 +66,7 @@ class TransparentButton(Button):
             self.line_color[3] = .2
             self.shade_color[3] = .05
             self.back_color[3] = .08
-            self.color = [.6, 1, 1, 1]
+            self.color = [1, 1, 1, 1]
         else:
             self.line_color[3] = 0
             self.shade_color[3] = 0
@@ -82,6 +83,17 @@ class ToggleFlatButton(ToggleButtonBehavior, FlatButton):
 
 
 """Custom Widgets"""
+
+class EditorTextInput(TextInput):
+
+    underline_color = ListProperty([1, 1, 1, .4])
+    focus_under_color = ListProperty([])
+
+    def on_focus(self, _, enter_focus):
+        if enter_focus:
+            self.underline_color = self.focus_under_color
+        else:
+            self.underline_color = [1, 1, 1, .4]
 
 
 class ScrollableLabel(ScrollView):
