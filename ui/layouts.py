@@ -12,7 +12,7 @@ import tkFileDialog
 
 class RootLayout(BoxLayout):
     back_texture = Image(source=r"C:\Users\Dell\PycharmProjects\Metador"
-                                r"\res\images\blur_blue.jpg",
+                                r"\res\images\gradient_red.jpg",
                         mipmap=True)
 
 

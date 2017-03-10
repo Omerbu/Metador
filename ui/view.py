@@ -66,6 +66,7 @@ class MetadorGui(App):
         Window.size = (1350, 850)
         Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
         self.icon = r"res\icons\music_cover.png"
+        self.skin_config()
         self.app_menu_layout = AppMenuLayout()
         self.root_layout = RootLayout(orientation="vertical")
         self.upper_layout = AnimatedBoxLayout(orientation="horizontal",
@@ -96,6 +97,14 @@ class MetadorGui(App):
 
 
     """WIDGETS CONFIG"""
+
+    def skin_config(self):
+        # self.icon_color_hex = "5c7f8a"
+        self.icon_color_hex = "ffad33"
+        self.pressed_icon_color = "ff3300"
+        # self.icon_color_rgba = [.6, .75, .8, 0.6]
+        self.icon_color_rgba = [1, .75, .24, 1]
+        self.underline_color = [1, 0, 0, 1]
 
     def tree_view_config(self):
         """Create and configure file explorer (Tree view)."""

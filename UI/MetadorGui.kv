@@ -7,7 +7,7 @@
     spacing: 15
     canvas:
         Color:
-            rgba:.95,.95,1,.6
+            rgba: 1,1,1,.65
         Rectangle:
             texture: self.back_texture.texture
             pos:self.pos
@@ -58,12 +58,16 @@
 
 
 <FlatButton>:
+    icon_color: app.icon_color_hex
+    norm_icon_color: app.icon_color_hex
+    pressed_icon_color: app.pressed_icon_color
+    pressed_underline_color: app.underline_color
     canvas:
         Color:
             rgba:self.underline_color
         Rectangle:
-            size: self.size[0]  , 1
-            pos:self.pos[0], self.pos[1]
+            size: self.size[0]  ,1
+            pos: self.pos[0]  , self.pos[1]
             # points: [self.pos[0]+self.width * .2  , self.pos[1], self.pos[0]+self.width * .8 ,self.pos[1]]
             # width: 1
 
@@ -203,7 +207,7 @@
         id: node_label
         canvas:
             Color:
-                rgba: .6, .75, .8, 0.6
+                rgba: app.icon_color_rgba
             Rectangle:
                 texture:root.file_icon.texture
                 pos: root.pos[0] -20, root.center_y -7
@@ -250,7 +254,8 @@
         id: node_label
         canvas:
             Color:
-                rgba: root.folder_color_sub_nodes if root.is_sub_nodes else root.folder_icon_color
+                rgba: app.icon_color_rgba
+                #rgba: root.folder_color_sub_nodes if root.is_sub_nodes else root.folder_icon_color
             Rectangle:
                 texture:root.file_icon.texture
                 pos: root.pos[0] -37, root.center_y -7
@@ -349,14 +354,14 @@
     BoxLayout:
         EditorLabel:
             id: lbl_title
-            text: "%s"%(icon.icon('fa-music',17,"5c7f8a"))
+            text: "%s"%(icon.icon('fa-music',17, app.icon_color_hex))
         EditorTextInput:
             id: InputTitle
             hint_text: "Title"
     BoxLayout:
         EditorLabel:
             id: label_artist
-            text: "%s"%(icon.icon('fa-user',17,"5c7f8a"))
+            text: "%s"%(icon.icon('fa-user',17,app.icon_color_hex))
         EditorTextInput:
             id: InputArtist
             hint_text: "Artist"
@@ -366,7 +371,7 @@
             size: 29,29
             canvas:
                 Color:
-                    rgba: .6, .75, .8, 0.5
+                    rgba: app.icon_color_rgba
                 Rectangle:
                     pos: self.pos[0]+6,self.pos[1]+5
                     texture:self.icon_src.texture
@@ -380,7 +385,7 @@
             size: 29,29
             canvas:
                 Color:
-                    rgba: .6, .75, .8, 0.5
+                    rgba: app.icon_color_rgba
                 Rectangle:
                     pos: self.pos[0]+6,self.pos[1]+5
                     texture:self.icon_src.texture
@@ -390,7 +395,7 @@
             hint_text: "Genre"
     BoxLayout:
         EditorLabel:
-            text: "%s"%(icon.icon('fa-hashtag',16,"5c7f8a"))
+            text: "%s"%(icon.icon('fa-hashtag',16,app.icon_color_hex))
         EditorTextInput:
             id: InputTracknumber
             input_filter: "int"
@@ -399,7 +404,7 @@
             hint_text: "Num"
         FloatLayout:
         EditorLabel:
-            text: "%s"%(icon.icon('fa-calendar',16,"5c7f8a"))
+            text: "%s"%(icon.icon('fa-calendar',16,app.icon_color_hex))
         EditorTextInput:
             id: InputDate
             input_filter: "int"
@@ -409,7 +414,7 @@
     BoxLayout:
         EditorLabel:
             id: lbl_album_artist
-            text: "%s"%(icon.icon('fa-users',16,"5c7f8a"))
+            text: "%s"%(icon.icon('fa-users',16,app.icon_color_hex))
         EditorTextInput:
             id: InputAlbumartist
             hint_text: "Album Artist"
@@ -488,14 +493,13 @@
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
     BoxLayout:
-        size_hint: 1,0.07
-        spacing: self.width / 1.20
+        size_hint: 1,0.09
+        spacing: self.width / 3
         FlatButton:
-            text: "%s"%(icon.icon("fa-remove",18,self.icon_color))
+            text: "%s"%(icon.icon("fa-remove",22,self.icon_color))
             on_press: converter_list.clear_tree_view()
         FlatButton:
-            text: "%s"%(icon.icon("fa-bar-chart",18,self.icon_color))
-    SpacingLayout:
+            text: "%s"%(icon.icon("fa-bar-chart",22,self.icon_color))
     BoxLayout:
         size_hint:1,None
         height: 20

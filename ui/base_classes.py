@@ -9,6 +9,7 @@ from kivy.uix.togglebutton import ToggleButtonBehavior
 from kivy.uix.image import Image
 from kivy.core.image import Image as CoreImage
 from kivy.resources import resource_find
+from kivy.graphics import Rectangle,Color
 
 """Color Buttons"""
 
@@ -25,16 +26,18 @@ class SimpleTransparentButton(Button):
 
 class FlatButton(SimpleTransparentButton):
 
-    icon_color = StringProperty("5c7f8a")
-    underline_color = ListProperty([1, 1, 1, 0])
+    norm_icon_color = StringProperty("")
+    pressed_icon_color = StringProperty("00ffff")
+    underline_color = ListProperty([0, 0, 0, 0])
+    pressed_underline_color = ListProperty([])
 
     def on_state(self, _, new_state):
         if new_state == 'down':
-            self.underline_color = [0, 1, 1, 1]
-            self.icon_color = "00ffff"
+            self.underline_color = self.pressed_underline_color
+            self.icon_color = self.pressed_icon_color
         else:
             self.underline_color = [0, 1, 1, 0]
-            self.icon_color = "5c7f8a"
+            self.icon_color = self.norm_icon_color
 
 
 class CoverArtImage(ButtonBehavior, Image):
