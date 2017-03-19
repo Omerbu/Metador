@@ -23,7 +23,9 @@
       "ModalColor":[0.5,0.1,0.3,1],
       "MainColorHex": "00b8e6",
       "PressedColor": "66ffff",
-      "Tint": 0.95
+      "Tint": 0.95,
+      "MDColor":"LightBlue",
+      "MDHue": "500"
     },
 
   "Carbon":

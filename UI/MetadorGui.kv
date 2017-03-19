@@ -81,7 +81,8 @@
     text_color: app.icon_color_rgba
     theme_text_color: "Custom"
 
-
+<TextButton@MDFlatButton>:
+    ripple_color: app.icon_color_rgba
 
 
 <FilterCheckBox@MDCheckbox>:
@@ -162,8 +163,7 @@
                     FilterCheckBox:
                         id: MP3_ch
                         ext: "mp3"
-                FlatButton:
-                    size_hint: 0.2,1
+                TextButton:
                     text: "Filter"
                     on_press: app.files_filter_handler()
                     on_release: app.change_carousel(filter_carousel,1)
@@ -205,6 +205,8 @@
     text_size: self.width, None
 
 
+
+
 <FileNode>:
     height:node_label.size[1]
     padding: 5,0
@@ -226,22 +228,25 @@
                 texture:root.file_icon.texture
                 pos: root.pos[0] -20, root.center_y -7
                 size: (15, 15)
-    #Label:
-        #size_hint: None,1
-        #font_size: 14
-        #width: self.texture_size[0]
-        #text: "{} MB".format(root.file_size)
-    MDCheckbox:
-        size_hint: 0.1,1
 
+
+<LibraryNode>:
+    MDCheckbox:
+        id: node_ch
+        size_hint: 0.08,1
+        on_release: app.tree_view.check_event(root,self.active)
 
 
 <ListNode>:
+    Label:
+        size_hint: None,1
+        width: self.texture_size[0]
+        text: "{} MB".format(root.file_size)
     FloatLayout:
         size_hint:None,1
-        width: 2
+        width: 15
     Label:
-        size_hint: No,1
+        size_hint: None,1
         width: self.texture_size[0]
         text: "{}".format(root.file_duration)
 
@@ -265,11 +270,14 @@
         canvas:
             Color:
                 rgba: app.icon_color_rgba
-                #rgba: root.folder_color_sub_nodes if root.is_sub_nodes else root.folder_icon_color
             Rectangle:
                 texture:root.file_icon.texture
                 pos: root.pos[0] -37, root.center_y -7
                 size: (17, 13)
+    MDCheckbox:
+        id: node_ch
+        size_hint: 0.08,1
+        on_release: app.tree_view.check_event(root,self.active)
 
 <ScrollableLabel>:
     canvas:
@@ -327,8 +335,7 @@
     padding:[10,0,0,10]
     Carousel:
         direction: "bottom"
-        scroll_distance:100000000
-        scroll_timeout: 10000
+        scroll_timeout:-1
         size_hint:1, 4
         id: coverart_carousel
         CoverArtImage:
@@ -340,14 +347,17 @@
                 size_hint_x: 0.7
             BoxLayout:
                 orientation: "vertical"
-                FlatButton:
+                TextButton:
+                    size_hint: 1,1
                     text: "Add Cover Art"
                     on_press: root.add_cover_art()
-                FlatButton:
+                TextButton:
+                    size_hint: 1,1
                     text: "Remove Cover Art"
                     on_release: coverart_carousel.load_previous()
-                    on_press: root.remove_cover_art
-                FlatButton:
+                    on_release: root.remove_cover_art
+                TextButton:
+                    size_hint: 1,1
                     text: "Cancel"
                     on_release: coverart_carousel.load_previous()
             FloatLayout:
@@ -450,19 +460,14 @@
     padding:[10,0,0,10]
     spacing: 0
     orientation: "vertical"
-    #Label:
-        #size_hint:1,0.1
-        #id: converter_label
-        #text: "File Converter"
-        #font_size: 17
-        #bold:True
     SpacingLayout:
     BoxLayout:
         size_hint: 1,0.07
-        spacing: self.width / 1.20
         IconButton:
-            icon: 'notification-clear-all'
+            icon: "window-close"
             on_press: converter_list.clear_tree_view()
+        FloatLayout:
+            size_hint:10,1
         IconButton:
             icon: "chart-bar"
     BoxLayout:
@@ -562,15 +567,13 @@
             on_release: app.change_dest_folder()
     SpacingLayout:
     SpacedHoLine:
-    SpacingLayout:
     BoxLayout:
-        spacing: self.width / 10
+        padding: 50,0,50,0
         size_hint: 1,None
-        size: 0,36
-        FlatButton:
-            size_hint: 1,None
-            height: 36
-            text: "%s  Convert"%(icon.icon("fa-check",16,self.icon_color))
+        size: 0,40
+        TextButton:
+            size_hint: 1,1
+            text: "Convert"
 
 
 <MetadorLayout>:
@@ -580,9 +583,11 @@
     SpacingLayout:
     BoxLayout:
         size_hint: 1,0.07
-        spacing: self.width / 1.25
         IconButton:
+            icon: "window-close"
             on_press:metador_list.clear_tree_view()
+        FloatLayout:
+            size_hint:10,1
         IconButton:
             icon:"settings"
             on_release: app.settings_modal.open()
@@ -623,17 +628,14 @@
         height:20
         text: "  {} Songs".format(metador_list.list_counter)
     SpacedHoLine:
-    SpacingLayout:
     BoxLayout:
-        padding: [100,0,100,0]
+        padding: [10,0,10,0]
         size_hint: 1, None
         size: 0,36
         orientation: "horizontal"
-        FlatButton:
-            bold: True
-            font_size: 18
-            text: "%s   Metador"%(icon.icon("fa-music",18,self.icon_color))
-            markup: True
+        TextButton:
+            text: "Metador!"
+            size_hint: 4,1
 
 
 <AppMenuLayout>:
@@ -799,7 +801,7 @@
                 on_text: root.update_example()
             IconButton:
                 size_hint: .1,1
-                icon: 'format-clear'
+                icon: 'window-close'
                 on_release: sorting_text_input.text = ""
         Label:
             text: "Example:"
@@ -809,11 +811,14 @@
         BoxLayout:
             size_hint: 1,5
         BoxLayout:
-            size_hint: 1,1
-            TransparentButton:
+            size_hint: 1,.7
+            spacing: 10
+            TextButton:
+                size_hint: 1,1
                 text: "Cancel"
                 on_release: root.dismiss()
-            TransparentButton:
+            TextButton:
+                size_hint: 1,1
                 text: "Confirm"
 
 <LoadingModal>:
@@ -855,7 +860,7 @@
             id: content_label
             text: "Content"
         SpacedHoLine:
-        FlatButton:
+        TextButton:
             size_hint: 1,.2
             text: "OK"
             on_release: root.dismiss()

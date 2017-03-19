@@ -28,7 +28,6 @@ from nodes import *
 from modals import *
 from kivymd.button import MDFlatButton,MDIconButton
 from kivymd.label import MDLabel
-from kivymd.navigationdrawer import NavigationDrawerIconButton
 from kivymd.selectioncontrols import MDCheckbox
 from kivymd.theming import ThemeManager
 from kivymd.label import MDLabel
@@ -114,7 +113,7 @@ class MetadorGui(App):
     """WIDGETS CONFIG"""
 
     def skin_config(self):
-        self.load_theme("Jupiter")
+        self.load_theme("Carbon")
 
     def load_theme(self, theme):
         with open(self.THEME_JSON) as theme_file:
@@ -171,7 +170,7 @@ class MetadorGui(App):
     """APP EVENTS"""
 
     def debug_skin(self):
-       self.load_theme("Carbon")
+       self.load_theme("Pacific")
 
     def drop_file_event_handler(self, window_instance, drop_file_string):
 

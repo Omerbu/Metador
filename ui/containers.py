@@ -4,7 +4,7 @@ from kivy.uix.treeview import TreeView
 from kivy.properties import BooleanProperty, ListProperty, \
     ObjectProperty, NumericProperty
 from kivy.clock import Clock
-from nodes import FileNode, FolderNode, RootNode, ListNode
+from nodes import LibraryNode, FolderNode, RootNode, ListNode
 from utils.tagging import EasyTagger
 
 
@@ -18,6 +18,7 @@ class DynamicTree(TreeView):
     MB_CONST = float(1048576)
     is_multiple_selection = BooleanProperty(False)
     selected_nodes = ListProperty(list())
+    debug_var = False
 
     def __init__(self, *args, **kwargs):
         super(DynamicTree, self).__init__(*args, **kwargs)
@@ -44,46 +45,48 @@ class DynamicTree(TreeView):
                 else:
                     self.dispatch("on_folder_doubleclick", node)
             else:
+                try:
+                    if node.ids['node_ch'].collide_point(touch.pos[0], touch.pos[1]):
+                        self.debug_var = True
+                except KeyError:
+                    pass
                 self.select_node(node)
         node.dispatch('on_touch_down', touch)
         return True
 
-    def enable_multiple_selection(self, _):
-        self.selected_node.is_ms = True
+    def enable_multiple_selection(self):
         self.is_multiple_selection = True
-        self.selected_node.parent_node.is_sub_nodes = True
 
     def disable_multiple_selection(self):
         for node in self.selected_nodes:  # Clear all selected nodes.
             node.is_selected = False
             node.is_ms = False
-            if not any([x.is_selected for x in node.parent_node.nodes]):
-                node.parent_node.is_sub_nodes = False
+            node.ids['node_ch'].state = 'normal'
         self.selected_nodes = list()
-        self.is_multiple_selection = False
 
-    def on_is_multiple_selection(self,_,ms_value):
+    def on_is_multiple_selection(self, _, ms_value):
         if ms_value:
-            self.selected_nodes.append(self.selected_node)
-
+            pass
         else:
             self.disable_multiple_selection()
 
-
-    def ms_clock_on(self):
-        self.ms_event = Clock.schedule_once(self.enable_multiple_selection, .6)
-
-    def ms_clock_off(self):
-        if self.ms_event:
-            Clock.unschedule(self.ms_event)
+    def check_event(self, node, active):
+        if active:
+            if not self.is_multiple_selection:
+                self.enable_multiple_selection()
+            node.is_ms = True
+            node.is_selected = True
+            self.selected_nodes.append(node)
+        else:
+            node.is_ms = False
+            node.is_selected = False
+            self.selected_nodes.remove(node)
+            if not self.selected_nodes:
+                self.is_multiple_selection = False
 
     def clear_selection(self):
         if self.selected_node:
             self.selected_node.is_selected = False
-        for node in self.selected_nodes:  # Clear all selected nodes.
-            node.is_selected = False
-            node.is_ms = False
-        self.selected_nodes = list()
         self.is_multiple_selection = False
 
     def select_node(self, node):
@@ -94,24 +97,20 @@ class DynamicTree(TreeView):
         if node.no_selection:
             return
         if self.is_multiple_selection:
-            if node in self.selected_nodes:
-                node.is_ms = False
-                node.is_selected = False
-                if not any([x.is_selected for x in node.parent_node.nodes]):
-                    node.parent_node.is_sub_nodes = False
-                self.selected_nodes.remove(node)
-                if not self.selected_nodes:
-                    self.disable_multiple_selection()
+            if self.debug_var:
+                pass
             else:
-                node.is_ms = True
+                self.is_multiple_selection = False
+                if self._selected_node:
+                    self._selected_node.is_selected = False
                 node.is_selected = True
-                node.parent_node.is_sub_nodes = True
-                self.selected_nodes.append(node)
+                self._selected_node = node
         else:
             if self._selected_node:
                 self._selected_node.is_selected = False
             node.is_selected = True
             self._selected_node = node
+        self.debug_var = False
         self.dispatch("on_select", node)
 
     def on_node_expand(self, node):
@@ -130,10 +129,7 @@ class DynamicTree(TreeView):
         pass
 
     def on_select(self, node):
-        self.ms_clock_on()
-
-    def on_touch_up(self, touch):
-        self.ms_clock_off()
+        pass
 
     def check_for_directory(self, node):
         """Read the contents of the folder represented by 'node' argument."""
@@ -144,9 +140,9 @@ class DynamicTree(TreeView):
             sub_dir_path = sub_dir.path
             if sub_dir.is_file():
                 sub_dir_size = str(round(sub_dir.stat()[6] / self.MB_CONST, 1))
-                self.add_node(FileNode(path=sub_dir_path,
-                                       text=unicode(sub_dir.name),
-                                       file_size=sub_dir_size), node)
+                self.add_node(LibraryNode(path=sub_dir_path,
+                                          text=unicode(sub_dir.name),
+                                          file_size=sub_dir_size), node)
             else:
                 sub_folder = FolderNode(path=sub_dir.path, text=sub_dir.name)
                 self.add_node(sub_folder, node)
@@ -166,9 +162,9 @@ class DynamicTree(TreeView):
             some_dir_path = some_dir.path
             if some_dir.is_file():
                 some_dir_size = str(round(some_dir.stat()[6] / self.MB_CONST, 1))
-                self.add_node(FileNode(path=some_dir_path,
-                                       text=unicode(some_dir.name),
-                                       file_size=some_dir_size))
+                self.add_node(LibraryNode(path=some_dir_path,
+                                          text=unicode(some_dir.name),
+                                          file_size=some_dir_size))
                 yield
             else:
                 folder = FolderNode(path=some_dir_path, text=unicode(some_dir.name))

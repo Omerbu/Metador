@@ -11,7 +11,7 @@ class BorderLessNode(TreeViewNode):
     """Tree View Node without annoying borders"""
 
 
-class BaseNode(BorderLessNode):
+class BaseNode(BoxLayout, BorderLessNode):
 
     path = StringProperty("")
     is_mapped = BooleanProperty(True)
@@ -23,11 +23,15 @@ class BaseNode(BorderLessNode):
     even_color = [.5, .5, .5, 0]
 
 
-class FileNode(BoxLayout, BaseNode):
+class FileNode(BaseNode):
     file_icon = Image(source=r"res\icons\\file_icon_white.png",
                       mipmap=True)
     node_type = StringProperty("File")
     file_size = StringProperty("")
+
+
+class LibraryNode(FileNode):
+    pass
 
 
 class ListNode(FileNode):
@@ -35,7 +39,7 @@ class ListNode(FileNode):
     file_duration = StringProperty("")
 
 
-class FolderNode(BoxLayout, BaseNode):
+class FolderNode(BaseNode):
     file_icon = Image(source=r"res\icons\grey_folder.png",
                       mipmap=True)
     is_sub_nodes = BooleanProperty(False)
@@ -43,9 +47,6 @@ class FolderNode(BoxLayout, BaseNode):
     folder_color_sub_nodes = [0, 1, 1, 1]
     folder_icon_color = [.6, .75, .8, 0.5]
     is_ms = BooleanProperty(False)
-
-    def debug(self):
-        print "debug"
 
 
 class RootNode(Label, TreeViewNode):
