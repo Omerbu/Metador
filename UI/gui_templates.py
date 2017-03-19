@@ -201,3 +201,33 @@ class AboutDropDown(DropDown, HoverBehavior):
                                          Window.mouse_pos[1]):
                 return
         self.dismiss()
+
+
+class TransparentButton(Button):
+
+    line_color = ListProperty([.4, .42, .45, 0])
+    shade_color = ListProperty([0, 0, 0, 0])
+    back_color = ListProperty([0, 0, 0, 0])
+
+    def __init__(self, **kwargs):
+        super(TransparentButton, self).__init__(**kwargs)
+        self.background_normal = ""
+        self.background_down = ""
+        self.background_color = [1, 1, 1, 0]
+
+    def on_state(self, _, new_state):
+        if new_state == 'down':
+            self.line_color[3] = .2
+            self.shade_color[3] = .05
+            self.back_color[3] = .08
+            self.color = [1, 1, 1, 1]
+        else:
+            self.line_color[3] = 0
+            self.shade_color[3] = 0
+            self.back_color[3] = 0
+            self.color = 1, 1, 1, 1
+
+
+
+"""THE DEcorator"""
+

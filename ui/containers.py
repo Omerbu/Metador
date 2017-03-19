@@ -241,23 +241,25 @@ class SelectedList(DynamicTree):
                 self.remove_node(to_remove_node)
                 self.list_counter -= 1
 
-    def add_to_list(self, node_list):
+    def add_to_list(self, node_list, done_callback):
         def mapping_callback(dt):
             try:
                 self.add_generator.next()
             except StopIteration:
                 self.adding_schedule.cancel()
+                done_callback()
 
         self.add_generator = self.adding_generator(node_list)
         self.adding_schedule = Clock.schedule_interval(mapping_callback, 0)
 
     def adding_generator(self, input_list_node):
-        nodes_list = list()
         if not input_list_node:
             return
+        nodes_list = list()
         try:
             _ = iter(input_list_node)
             for node in input_list_node:
+                yield
                 if node.node_type == "Folder":
                     self.folder_building(node)
                     nodes_list += self.folder_reader(node)
@@ -266,11 +268,11 @@ class SelectedList(DynamicTree):
                     nodes_list.append(node)
         except TypeError:
             nodes_list.append(input_list_node)
-
+        yield
         self.node_list = [sub_node for sub_node in self.iterate_all_nodes() if
                           not sub_node.text == "Root"]
-        yield
         for node in nodes_list:
+            yield
             self.node_path_list = [n_path.path for n_path in self.node_list]
             if node.path not in self.node_path_list:
                 input_node_duration = EasyTagger(node.path).get_duration()

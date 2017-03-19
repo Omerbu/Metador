@@ -15,7 +15,7 @@
             size:self.size
 
 <Label>:
-    color:.9, .95, .95, .9
+    color:app.text_color
 
 <HoLine@FloatLayout>:
     size_hint:1,None
@@ -56,6 +56,8 @@
     size_hint: 1,None
     height: 30
 
+<TransParentButton>:
+    pressed_color: app.icon_color_rgba
 
 
 <FlatButton>:
@@ -72,24 +74,33 @@
             # points: [self.pos[0]+self.width * .2  , self.pos[1], self.pos[0]+self.width * .8 ,self.pos[1]]
             # width: 1
 
-<FilterCheckBox@CheckBox>:
+
+<IconButton@MDIconButton>:
+    ripple_color: app.icon_color_rgba
+    markup: True
+    text_color: app.icon_color_rgba
+    theme_text_color: "Custom"
+
+
+
+
+<FilterCheckBox@MDCheckbox>:
     active: True
     ext: ""
-    color: [1,1,0,1]
 
 <TreeScroll>:
     bar_color: app.underline_color
 
 <LeftLayout>:
-    spacing: 2
+    spacing: 1
     size_hint: 1.05,1
     orientation:"vertical"
     AnimatedBoxLayout:
         id:tree_button_layout
         size_hint: 1, None
-        size:0,36
+        size:0,45
         Carousel:
-            direction: "top"
+            direction: "bottom"
             scroll_distance:100000000
             scroll_timeout: 10
             anim_move_duration:.3
@@ -107,17 +118,16 @@
                     on_press: app.selected_list_node_add_handler(None,app.tree_view.selected_nodes)
                     on_release: app.tree_view.clear_selection()
             BoxLayout:
-                spacing: self.width / 9
-                FlatButton:
-                    text:"%s  Open"%(icon.icon('fa-folder',16,self.icon_color))
-                    on_press: app.change_explorer()
-                FlatButton:
-                    text:"%s  Refresh"%(icon.icon('fa-refresh',16,self.icon_color))
-                    on_press: app.tree_refresh()
-                FlatButton:
-                    text: "%s  Filter"%(icon.icon('fa-filter',16,self.icon_color))
+                spacing: self.width / 3.1
+                IconButton:
+                    icon: "folder-plus"
+                    on_release: app.change_explorer()
+                IconButton:
+                    icon: "refresh"
+                    on_release: app.tree_refresh()
+                IconButton:
+                    icon: "filter"
                     on_release: app.change_carousel(filter_carousel,2)
-
             BoxLayout:
                 GridLayout:
                     spacing: 4
@@ -157,10 +167,10 @@
                     text: "Filter"
                     on_press: app.files_filter_handler()
                     on_release: app.change_carousel(filter_carousel,1)
-    SpacedHoLine:
+    HoLine:
 
 <CenterLayout>:
-    size_hint:1.2,1
+    size_hint:1.4,1
     spacing: 2
     AnimatedBoxLayout:
         size_hint:1,None
@@ -198,7 +208,6 @@
 <FileNode>:
     height:node_label.size[1]
     padding: 5,0
-    spacing: 10
     Label:
         padding_y: 5
         size: root.width,self.texture_size[1] + 8
@@ -217,16 +226,14 @@
                 texture:root.file_icon.texture
                 pos: root.pos[0] -20, root.center_y -7
                 size: (15, 15)
-    Label:
-        size_hint: None,1
-        font_size: 14
-        width: self.texture_size[0]
-        text: "{} MB".format(root.file_size)
-    #SimpleTransparentButton:
+    #Label:
         #size_hint: None,1
-        #width: 20
-        #text: "%s"%(icon.icon("fa-plus",16,self.icon_color))
-        #on_release: app.file_doubleclick_handler(None,root)
+        #font_size: 14
+        #width: self.texture_size[0]
+        #text: "{} MB".format(root.file_size)
+    MDCheckbox:
+        size_hint: 0.1,1
+
 
 
 <ListNode>:
@@ -234,7 +241,7 @@
         size_hint:None,1
         width: 2
     Label:
-        size_hint: None,1
+        size_hint: No,1
         width: self.texture_size[0]
         text: "{}".format(root.file_duration)
 
@@ -244,8 +251,6 @@
 <FolderNode>:
     height:node_label.size[1]
     padding: 5,0
-    droppable_zone_objects:[app.center_layout,]
-    drop_func: self.debug
     Label:
         padding_y: 5
         size: root.width,self.texture_size[1] + 8
@@ -426,20 +431,18 @@
             hint_text: "Album Artist"
     SpacedHoLine:
     BoxLayout:
-        spacing: self.width / 9
+        spacing: self.width / 3.2
         size_hint: 1,None
         size: 0,36
         orientation: "horizontal"
-        FlatButton:
-            text: "%s  Rename"%(icon.icon("fa-pencil",16,self.icon_color))
-            on_press:
-        FlatButton:
-            text: "%s  Auto-Tag"%(icon.icon("fa-tag",16,self.icon_color))
-            on_press: print self.size
-        FlatButton:
-            text: "%s  Save"%(icon.icon("fa-floppy-o",16,self.icon_color))
-            on_press: app.write_tags()
-            markup: True
+        IconButton:
+            icon: "lead-pencil"
+        IconButton:
+            icon: "tag"
+            on_release: print self.size
+        IconButton:
+            icon: "content-save"
+            on_release: app.write_tags()
 
 
 
@@ -457,11 +460,11 @@
     BoxLayout:
         size_hint: 1,0.07
         spacing: self.width / 1.20
-        FlatButton:
-            text: "%s"%(icon.icon("fa-remove",20,self.icon_color))
+        IconButton:
+            icon: 'notification-clear-all'
             on_press: converter_list.clear_tree_view()
-        FlatButton:
-            text: "%s"%(icon.icon("fa-bar-chart",20,self.icon_color))
+        IconButton:
+            icon: "chart-bar"
     BoxLayout:
         size_hint:1,None
         height: 20
@@ -494,11 +497,12 @@
     HoLine:
     Label:
         text_size: self.size
-        halign: "left"
+        halign: "center"
         size_hint:1,None
         height:30
         text: "  {} Songs".format(converter_list.list_counter)
     SpacingLayout:
+
     AnimatedBoxLayout:
         size_hint: 1,None
         size: 0,35
@@ -516,30 +520,31 @@
                     size_hint: 0.4, 1
                 Label:
                     id: filter_label
-                    bold: False
+                    bold: True
                     text: "Format"
+                    color: app.icon_color_rgba
             BoxLayout:
-                SimpleTransparentButton:
+                TransparentButton:
                     text:"FLAC"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
-                SimpleTransparentButton:
+                TransparentButton:
                     text: "ALAC"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
-                SimpleTransparentButton:
+                TransparentButton:
                     text: "OGG"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
-                SimpleTransparentButton:
+                TransparentButton:
                     text: "WMA"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
-                SimpleTransparentButton:
+                TransparentButton:
                     text: "AIFF"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
-                SimpleTransparentButton:
+                TransparentButton:
                     text: "MP3"
                     on_press: filter_label.text = self.text
                     on_release: converter_carousel.load_previous()
@@ -551,11 +556,10 @@
         EditorTextInput:
             id: converter_text_input
             hint_text: "Destination Folder"
-        FlatButton:
+        IconButton:
             size_hint: 0.1,0.98
-            markup: True
-            text: "%s"%(icon.icon('fa-folder',16,self.icon_color))
-            on_press: app.change_dest_folder()
+            icon: "folder"
+            on_release: app.change_dest_folder()
     SpacingLayout:
     SpacedHoLine:
     SpacingLayout:
@@ -569,7 +573,6 @@
             text: "%s  Convert"%(icon.icon("fa-check",16,self.icon_color))
 
 
-
 <MetadorLayout>:
     padding:[10,0,0,10]
     spacing: 0
@@ -577,12 +580,11 @@
     SpacingLayout:
     BoxLayout:
         size_hint: 1,0.07
-        spacing: self.width / 1.20
-        FlatButton:
-            text: "%s"%(icon.icon("fa-times",20,self.icon_color))
+        spacing: self.width / 1.25
+        IconButton:
             on_press:metador_list.clear_tree_view()
-        FlatButton:
-            text: "%s"%(icon.icon("fa-cogs",20,self.icon_color))
+        IconButton:
+            icon:"settings"
             on_release: app.settings_modal.open()
     BoxLayout:
         size_hint:1,None
@@ -639,24 +641,26 @@
     size: 0,38
     canvas:
         Color:
-            rgba: [.2,.1,.3,.2]
+            rgba: [0,0,0,0]
         Rectangle:
             pos:self.pos
             size:self.size
-    FlatButton:
-        text: "%s"%(icon.icon('fa-bars',17,self.icon_color))
+    IconButton:
+        icon: "menu"
         size_hint:.05,1
-        on_press: app.debug_skin()
+        #on_release: app.message_modal.message('fa-music','Error','Fuck You')
+        on_release: app.debug_skin()
     Label:
         text: "Metador"
         font_size: 21
         size_hint: 0.4,1
+        color: app.icon_color_rgba
     FloatLayout:
-    FlatButton:
-        text: "%s"%(icon.icon("fa-info",16,self.icon_color))
+    IconButton:
+        icon: "information"
         size_hint: None,1
-        width: 40
-        on_press: app.about_modal.open()
+        width: 50
+        on_release: app.about_modal.open()
     FloatLayout:
         size_hint: .01,1
     ProgressSpinner:
@@ -671,15 +675,33 @@
         size_hint:0.02,1
 
 
-<AboutModal>:
-    background_color:[0,0,0,0.7]
+
+<MaterialModal>:
+    background_color:[0,0,0,0]
     background: r"res\images\tran_back.png"
     size_hint: None,None
+    auto_dismiss: False
+    canvas.before:
+        Color:
+            rgba: 1,1,1,1
+        Rectangle:
+            size: self.shadow_size1
+            pos: self.shadow_pos1
+            texture: self.shadow_texture1
+        Rectangle:
+            size: self.shadow_size2
+            pos: self.shadow_pos2
+            texture: self.shadow_texture2
+
+
+<AboutModal>:
+    background_color:[0,0,0,0.2]
+    size_hint: None,None
     padding: 10
-    size: 300,400
+    auto_dismiss: True
     canvas:
         Color:
-            rgba: .26,.26,.26,1
+            rgba: app.modal_color
         Rectangle:
             pos: self.pos
             size: self.size
@@ -719,45 +741,40 @@
                 text:"Powered By:"
                 bold:True
             Label:
-                text:"[ref=kivy][color=0099ff]Kivy[/color][/ref]"
+                text:"[ref=kivy]Kivy[/ref]"
+                color: app.icon_color_rgba
                 markup: True
                 on_ref_press:webbrowser.open("https://kivy.org/#home")
             Label:
-                text:"[ref=kivy][color=0099ff]AcoustID[/color][/ref]"
+                text:"[ref=kivy]AcoustID[/ref]"
+                color: app.icon_color_rgba
                 markup: True
                 on_ref_press:webbrowser.open("https://acoustid.org/")
             Label:
-                text:"[ref=kivy][color=0099ff]Pygn[/color][/ref]"
+                text:"[ref=kivy]Pygn[/ref]"
+                color: app.icon_color_rgba
                 markup: True
                 on_ref_press:webbrowser.open("https://github.com/cweichen/pygn")
 
 
 
 <SettingsModal>:
-    background_color:[0,0,0,0.7]
-    background: r"res\images\tran_back.png"
+    background_color:[0,0,0,.1]
     size_hint: None,None
-    size: 400,500
     canvas:
         Color:
-            rgba: .26,.26,.26,1
+            rgba: app.modal_color
         Rectangle:
             pos: self.pos
             size: self.size
-
     BoxLayout:
         orientation: "vertical"
         Label:
             text: "File Naming Format:"
+            color: app.icon_color_rgba
             bold: True
             size_hint: 1,0.7
             font_size: 17
-            canvas.before:
-                Color:
-                    rgba: app.icon_color_rgba
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
         BoxLayout:
             TransparentButton:
                 text: "Track"
@@ -780,15 +797,71 @@
             EditorTextInput:
                 id: sorting_text_input
                 on_text: root.update_example()
-            FlatButton:
+            IconButton:
                 size_hint: .1,1
-                text: "%s"%(icon.icon("fa-remove",16,self.icon_color))
+                icon: 'format-clear'
                 on_release: sorting_text_input.text = ""
         Label:
             text: "Example:"
             size_hint: 1,0.6
         Label:
             id: example_label
-
         BoxLayout:
             size_hint: 1,5
+        BoxLayout:
+            size_hint: 1,1
+            TransparentButton:
+                text: "Cancel"
+                on_release: root.dismiss()
+            TransparentButton:
+                text: "Confirm"
+
+<LoadingModal>:
+    background_color:[0,0,0,0.4]
+    background: r"res\images\tran_back.png"
+    size_hint: None,None
+    auto_dismiss: False
+    ProgressSpinner:
+        stroke_width: 2
+        color: app.underline_color
+        id: tree_progress
+        auto_start: False
+        speed:2
+
+<MessageModal>:
+    background_color:[0,0,0,.1]
+    size_hint: None,None
+    padding: 40,0,40,20
+    canvas:
+        Color:
+            rgba: app.modal_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            id: icon_label
+            size_hint: 1,0.7
+            markup: True
+            text: "%s"%(icon.icon(root.icon_string,90, app.icon_color_hex))
+        Label:
+            id: header_label
+            text: "Header"
+            bold: True
+            size_hint: 1,0.2
+            font_size: 22
+        Label:
+            id: content_label
+            text: "Content"
+        SpacedHoLine:
+        FlatButton:
+            size_hint: 1,.2
+            text: "OK"
+            on_release: root.dismiss()
+
+
+
+
+
+

@@ -15,17 +15,22 @@ from kivy.graphics import Rectangle,Color
 """Color Buttons"""
 
 
-class SimpleTransparentButton(Button):
+class TransparentButton(Button):
+
+    pressed_color = ListProperty([1,1,1,1])
 
     def __init__(self, **kwargs):
-        super(SimpleTransparentButton, self).__init__(**kwargs)
-        self.markup = True
+        super(TransparentButton, self).__init__(**kwargs)
         self.background_normal = ""
         self.background_down = ""
         self.background_color = [1, 1, 1, 0]
+        self.markup = True
+
+    def on_state(self, _, new_state):
+        self.color, self.pressed_color, = self.pressed_color, self.color
 
 
-class FlatButton(SimpleTransparentButton):
+class FlatButton(TransparentButton):
 
     norm_icon_color = StringProperty("")
     pressed_icon_color = StringProperty("00ffff")
@@ -33,12 +38,10 @@ class FlatButton(SimpleTransparentButton):
     pressed_underline_color = ListProperty([])
 
     def on_state(self, _, new_state):
-        if new_state == 'down':
-            self.underline_color = self.pressed_underline_color
-            self.icon_color = self.pressed_icon_color
-        else:
-            self.underline_color = [0, 1, 1, 0]
-            self.icon_color = self.norm_icon_color
+        super(FlatButton, self).on_state(_, new_state)
+        self.underline_color,self.pressed_underline_color = \
+            self.pressed_underline_color,self.underline_color
+        self.icon_color, self.pressed_icon_color = self.pressed_icon_color, self.icon_color
 
 
 class CoverArtImage(ButtonBehavior, Image):
@@ -49,29 +52,7 @@ class CoverArtImage(ButtonBehavior, Image):
         self.mipmap = True
 
 
-class TransparentButton(Button):
 
-    line_color = ListProperty([.4, .42, .45, 0])
-    shade_color = ListProperty([0, 0, 0, 0])
-    back_color = ListProperty([0, 0, 0, 0])
-
-    def __init__(self, **kwargs):
-        super(TransparentButton, self).__init__(**kwargs)
-        self.background_normal = ""
-        self.background_down = ""
-        self.background_color = [1, 1, 1, 0]
-
-    def on_state(self, _, new_state):
-        if new_state == 'down':
-            self.line_color[3] = .2
-            self.shade_color[3] = .05
-            self.back_color[3] = .08
-            self.color = [1, 1, 1, 1]
-        else:
-            self.line_color[3] = 0
-            self.shade_color[3] = 0
-            self.back_color[3] = 0
-            self.color = 1, 1, 1, 1
 
 
 class ToggleFlatButton(ToggleButtonBehavior, FlatButton):
@@ -90,10 +71,8 @@ class EditorTextInput(TextInput):
     focus_under_color = ListProperty([])
 
     def on_focus(self, _, enter_focus):
-        if enter_focus:
-            self.underline_color = self.focus_under_color
-        else:
-            self.underline_color = [1, 1, 1, .4]
+        self.underline_color, self.focus_under_color = \
+            self.focus_under_color, self.underline_color
 
 
 class ScrollableLabel(ScrollView):

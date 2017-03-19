@@ -1,33 +1,47 @@
 {
   "Jupiter":
   {
+      "TextColor":[0.9, 0.95, 0.95, 0.9],
       "Background": "res\\images\\gradient_red.jpg",
-      "MainColorRGBA": [1,0.75,0.24,1],
-      "UnderLineColor":[1,0.75,0.24,1],
-      "MainColorHex": "ffad33",
-      "PressedColor": "FF9800",
-      "Tint": 0.65
+      "MainColorRGBA": [1.0, 0.7019, 0.0, 1],
+      "UnderLineColor":[1.0, 0.7019, 0.0, 1],
+      "ModalColor":[0.22,0.15,0.35,1],
+      "MainColorHex": "FF9800",
+      "PressedColor": "FFCA28",
+      "Tint": 0.5,
+      "MDColor":"Amber",
+      "MDHue": "600"
     },
 
 
   "Pacific":
     {
-      "Background": "res\\images\\blur_blue.jpg",
+      "TextColor":[0, 0, 0,1],
+      "Background": "",
       "MainColorRGBA": [0.1, 0.72, 0.9, 0.6],
       "UnderLineColor":[0,1,1,1],
+      "ModalColor":[0.5,0.1,0.3,1],
       "MainColorHex": "00b8e6",
       "PressedColor": "66ffff",
-      "Tint": 0.65
+      "Tint": 0.95
     },
 
   "Carbon":
     {
+      "TextColor":[0.9, 0.95, 0.95, 1],
       "Background": "res\\images\\carbon.png",
-      "MainColorRGBA": [0.9, 0.1, 0.1, 1],
-      "UnderLineColor":[1,0,0, 1],
-      "MainColorHex": "cc0000",
-      "PressedColor": "ff0000",
-      "Tint": 1
+      "MainColorRGBA": [0, 0.8, 0.3, 1],
+      "UnderLineColor":[0, 0.9, 0.3, 1],
+      "ModalColor":[0.12,0.12,0.12,1],
+      "MainColorHex": "#00C853",
+      "PressedColor": "00C853",
+      "Tint": 0.9,
+      "MDColor":"Green",
+      "MDHue": "A400"
+
+
+
     }
+
 
 }

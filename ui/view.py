@@ -17,7 +17,8 @@ from kivy.uix.checkbox import CheckBox
 from kivy.properties import StringProperty, BooleanProperty, ListProperty, \
                             ObjectProperty, NumericProperty,ReferenceListProperty
 from kivy.uix.textinput import TextInput
-from kivy.uix.image import Image
+from kivy.uix.image import Image as KivyImage
+from kivy.utils import get_color_from_hex
 from base_classes import AnimatedBoxLayout,\
                         ToggleFlatButton, FlatButton, CoverArtImage
 from progressspiner import ProgressSpinner
@@ -25,21 +26,29 @@ from layouts import *
 from containers import *
 from nodes import *
 from modals import *
+from kivymd.button import MDFlatButton,MDIconButton
+from kivymd.label import MDLabel
+from kivymd.navigationdrawer import NavigationDrawerIconButton
+from kivymd.selectioncontrols import MDCheckbox
+from kivymd.theming import ThemeManager
+from kivymd.label import MDLabel
+from kivymd.dialog import MDDialog
+from kivymd.textfields import MDTextField
+
 
 """Config """
 Config.set('kivy', 'desktop', '1')
-
 
 """Labels and Buttons:"""
 
 
 class AlbumLabel(Label):
-        icon_src = Image(source=r"res\icons\cd.png",
+        icon_src = KivyImage(source=r"res\icons\cd.png",
                          mipmap=True)
 
 
 class GenreLabel(Label):
-        icon_src = Image(source=r"res\icons\electric_guitar.png",
+        icon_src = KivyImage(source=r"res\icons\electric_guitar.png",
                          mipmap=True)
 
 
@@ -51,13 +60,22 @@ class TreeScroll(ScrollView):
     pass
 
 
+class NBTM(ThemeManager):
+    """No Background Theme Manager"""
+    def set_clearcolor_by_theme_style(self, theme_style):
+        pass
+
+
 class MetadorGui(App):
 
+    theme_cls = NBTM()
     THEME_JSON = "res\\themes.json"
+    text_color = ListProperty()
     icon_color_rgba = ListProperty()
     underline_color = ListProperty()
     icon_color_hex = StringProperty("")
     pressed_icon_color = StringProperty("")
+    modal_color = ListProperty()
 
     def build(self):
         Window.bind(on_dropfile=self.drop_file_event_handler)
@@ -101,12 +119,17 @@ class MetadorGui(App):
     def load_theme(self, theme):
         with open(self.THEME_JSON) as theme_file:
             t_dict = json.load(theme_file)
+        self.text_color = t_dict[theme]["TextColor"]
         self.icon_color_rgba = t_dict[theme]["MainColorRGBA"]
         self.icon_color_hex = t_dict[theme]["MainColorHex"]
         self.pressed_icon_color = t_dict[theme]["PressedColor"]
         self.underline_color = t_dict[theme]["UnderLineColor"]
+        self.modal_color = t_dict[theme]["ModalColor"]
         self.root_layout.back_texture.source = t_dict[theme]["Background"]
         self.root_layout.tint = t_dict[theme]["Tint"]
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = t_dict[theme]["MDColor"]
+        self.theme_cls.primary_hue = t_dict[theme]["MDHue"]
 
     def tree_view_config(self):
         """Create and configure file explorer (Tree view)."""
@@ -136,12 +159,19 @@ class MetadorGui(App):
     def modal_config(self):
         """Create and configure all modal (Popup) widgets."""
         self.about_modal = AboutModal()
+        self.about_modal.size = [350, 400]
         self.settings_modal = SettingsModal()
+        self.settings_modal.size = 400, 550
+        self.loading_modal = LoadingModal()
+        self.loading_modal.size = 50, 50
+        self.message_modal = MessageModal()
+        self.message_modal.size = 450, 400
+
 
     """APP EVENTS"""
 
     def debug_skin(self):
-       self.load_theme("Pacific")
+       self.load_theme("Carbon")
 
     def drop_file_event_handler(self, window_instance, drop_file_string):
 
@@ -214,10 +244,13 @@ class MetadorGui(App):
         self.mapping_event(parent_path)
 
     def selected_list_node_add_handler(self, _, node):
+        self.loading_modal.open()
         if self.center_carousel.index == 1:
-            self.converter_layout.ids.converter_list.add_to_list(node)
+            self.converter_layout.ids.converter_list.add_to_list(node,
+                                                     self.loading_modal.dismiss)
         else:
-            self.metador_layout.ids.metador_list.add_to_list(node)
+            self.metador_layout.ids.metador_list.add_to_list(node,
+                                                     self.loading_modal.dismiss)
 
     def files_filter_handler(self):
         filter_chs = [self.left_layout.ids[widget].ext for widget in

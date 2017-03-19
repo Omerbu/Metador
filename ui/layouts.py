@@ -67,6 +67,8 @@ class TagEditorLayout(BoxLayout):
             if args[0].tagger:
                 results = func(*args, **kwargs)
                 return results
+            else:
+                print func
 
         return func_wrapper
 
